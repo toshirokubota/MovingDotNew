@@ -502,7 +502,7 @@ polygonArea(vector<CParticleF>& vp)
 /*
 Select K indices form 0..(N-1) randomly without replacement.
 */
-vector<int>
+/*vector<int>
 randomIndices(int n, int k)
 {
 	vector<int> idx(n); //sequence 0...(n-1)
@@ -518,5 +518,5 @@ randomIndices(int n, int k)
 		idx.erase(idx.begin() + sel);
 	}
 	return ri;
-}
+}*/
 

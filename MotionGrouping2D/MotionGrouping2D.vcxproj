@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{06F42A95-16DF-4798-833C-1AA0CE445382}</ProjectGuid>
-    <RootNamespace>PointGroup</RootNamespace>
-    <ProjectName>PointGroupTest</ProjectName>
+    <ProjectGuid>{AFFE4DDC-B432-4B6E-8645-DBDEE6CBD755}</ProjectGuid>
+    <RootNamespace>MotionGrouping2D</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -80,7 +80,7 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>.\Debug\</OutDir>
+    <OutDir>C:\Users\Toshiro Kubota\Documents\MATLAB\Dots\</OutDir>
     <IntDir>.\Debug\</IntDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
@@ -89,18 +89,18 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
-      <TypeLibraryName>.\Release/PointGroup.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Release/MotionGrouping2D.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..\include;.;C:\Program Files\MATLAB\R2011b\extern\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeaderOutputFile>.\Release/PointGroup.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Release/MotionGrouping2D.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\Release/</AssemblerListingLocation>
       <ObjectFileName>.\Release/</ObjectFileName>
       <ProgramDataBaseFileName>.\Release/</ProgramDataBaseFileName>
@@ -113,15 +113,15 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <OutputFile>../bin/PointGroup.dll</OutputFile>
+      <OutputFile>..\bin\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>.\Release/PointGroup.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention />
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>C:\Program Files\MATLAB\R2011b\extern\lib\win64\microsoft;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2015b\extern\lib\win32\microsoft;C:\opencv-3.2.0\build\install\x86\vc14\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;opencv_core320d.lib;opencv_highgui320d.lib;opencv_video320d.lib;opencv_videoio320d.lib;opencv_videostab320d.lib;opencv_ml320d.lib;opencv_imgproc320d.lib;opencv_objdetect320d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <Bscmake>
@@ -131,7 +131,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
-      <TypeLibraryName>.\Release/PointGroup.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Release/MotionGrouping2D.tlb</TypeLibraryName>
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
@@ -143,7 +143,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeaderOutputFile>.\Release/PointGroup.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Release/MotionGrouping2D.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\Release/</AssemblerListingLocation>
       <ObjectFileName>.\Release/</ObjectFileName>
       <ProgramDataBaseFileName>.\Release/</ProgramDataBaseFileName>
@@ -156,9 +156,9 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <OutputFile>../bin/PointGroup.dll</OutputFile>
+      <OutputFile>../bin/MotionGrouping2D.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <ProgramDatabaseFile>.\Release/PointGroup.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\Release/MotionGrouping2D.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
@@ -169,17 +169,17 @@
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Release/PointGroup.bsc</OutputFile>
+      <OutputFile>.\Release/MotionGrouping2D.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
-      <TypeLibraryName>.\Debug/PointGroup.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Debug/MotionGrouping2D.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..\include;.;C:\Program Files\MATLAB\R2011b\extern\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -200,23 +200,23 @@
       <OutputFile>C:\Users\Toshiro Kubota\Documents\MATLAB\Dots\$(ProjectName).dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\Debug/PointGroup.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\Debug/MotionGrouping2D.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention />
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>C:\Program Files\MATLAB\R2011b\extern\lib\win64\microsoft;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;libut.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2015b\extern\lib\win32\microsoft;C:\opencv-3.2.0\build\install\x86\vc14\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Debug/PointGroup.bsc</OutputFile>
+      <OutputFile>.\Debug/MotionGrouping2D.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
-      <TypeLibraryName>.\Debug/PointGroup.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Debug/MotionGrouping2D.tlb</TypeLibraryName>
       <HeaderFileName>
       </HeaderFileName>
     </Midl>
@@ -226,7 +226,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeaderOutputFile>.\Debug/PointGroup.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Debug/MotionGrouping2D.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\Debug/</AssemblerListingLocation>
       <ObjectFileName>.\Debug/</ObjectFileName>
       <ProgramDataBaseFileName>.\Debug/</ProgramDataBaseFileName>
@@ -242,32 +242,36 @@
       <OutputFile>C:\Users\Toshiro Kubota\Documents\MATLAB\Dots\$(ProjectName).dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\Debug/PointGroup.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\Debug/MotionGrouping2D.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <AdditionalLibraryDirectories>C:\Program Files\MATLAB\R2011b\extern\lib\win64\microsoft;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;libut.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Debug/PointGroup.bsc</OutputFile>
+      <OutputFile>.\Debug/MotionGrouping2D.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\MotionPointProcessing.cpp" />
+    <ClCompile Include="..\src\CoreParticleUtility.cpp" />
+    <ClCompile Include="..\src\szDistanceTransformNonIsotropic.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
-    <ClCompile Include="GroupPointsTest.cpp" />
+    <ClCompile Include="..\src\szMyNeighborOp.cpp" />
+    <ClCompile Include="MotionGrouping2D.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\CoreParticleUtility.h" />
     <ClInclude Include="..\include\mexFileIO.h" />
-    <ClInclude Include="..\include\MotionPointProcessing.h" />
+    <ClInclude Include="..\include\szDistanceTransformNonIsotropic.h" />
     <ClInclude Include="..\include\szMexUtility.h" />
     <ClInclude Include="..\include\szmexutilitytemplate.h" />
     <ClInclude Include="..\include\szMiscOperations.h" />
+    <ClInclude Include="..\include\szMyNeighborOp.h" />
     <ClInclude Include="..\include\szParticleF.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

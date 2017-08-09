@@ -95,7 +95,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..\include;.;C:\Program Files\MATLAB\R2011b\extern\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -113,15 +113,15 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <OutputFile>../bin/MovingDotGroup.dll</OutputFile>
+      <OutputFile>..\bin\$(TargetName)$(TargetExt)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>.\Release/PointGroup.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention />
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2011b\extern\lib\win32\microsoft;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2015b\extern\lib\win32\microsoft;C:\opencv-3.2.0\build\install\x86\vc14\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;opencv_core320d.lib;opencv_highgui320d.lib;opencv_video320d.lib;opencv_videoio320d.lib;opencv_videostab320d.lib;opencv_ml320d.lib;opencv_imgproc320d.lib;opencv_objdetect320d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <Bscmake>
@@ -257,15 +257,19 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\szDistanceTransformNonIsotropic.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
+    <ClCompile Include="..\src\szMyNeighborOp.cpp" />
     <ClCompile Include="MovingDotGrouping.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\mexFileIO.h" />
+    <ClInclude Include="..\include\szDistanceTransformNonIsotropic.h" />
     <ClInclude Include="..\include\szMexUtility.h" />
     <ClInclude Include="..\include\szmexutilitytemplate.h" />
     <ClInclude Include="..\include\szMiscOperations.h" />
+    <ClInclude Include="..\include\szMyNeighborOp.h" />
     <ClInclude Include="..\include\szParticleF.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

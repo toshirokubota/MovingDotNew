@@ -33,14 +33,6 @@ const int YOffset18[] = {0, 0, -1, 1, 0, 0, -1, 1, -1, 1, 0, 0, 0, 0, -1, -1, 1,
 const int ZOffset18[] = {0, 0, 0, 0, -1, 1, 0, 0, 0, 0, -1, 1, -1, 1, -1, 1, -1, 1};
 const int NumNeighbors18 = sizeof(XOffset18)/sizeof(XOffset18[0]);
 
-const int XOffset8[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-const int YOffset8[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-const int NumNeighbors8 = sizeof(XOffset8)/sizeof(XOffset8[0]);
-
-const int XOffset4[] = {0, -1, 1, 0};
-const int YOffset4[] = {-1, 0, 0, 1};
-const int NumNeighbors4 = sizeof(XOffset4)/sizeof(XOffset4[0]);
-
 bool
 BoundaryCheck(int index, 
               int ndim, 
@@ -69,7 +61,10 @@ makeNeighborhood10(int ndim, const int* dims);
 
 vector<int>
 MakeFourNeighborhood(int ndim,
-                     const int* dims);
+const int* dims);
+
+vector<vector<int>>
+MakeFourNeighborhood(int ndim);
 
 vector<int>
 MakeCausalFourNeighborhood(int ndim,
@@ -79,9 +74,15 @@ vector<int>
 MakeEightNeighborhood(int ndim,
                      const int* dims);
 
+vector<vector<int>>
+MakeEightNeighborhood(int ndim);
+
 vector<int>
 MakeNineNeighborhood(int ndim,
                      const int* dims);
+
+vector<vector<int>>
+MakeNineNeighborhood(int ndim);
 
 vector<int>
 MakeAntiCausalNeighborhood(int ndim,
@@ -90,15 +91,5 @@ MakeAntiCausalNeighborhood(int ndim,
 vector<int>
 MakeCausalNeighborhood(int ndim,
                            const int* dims);
-
-vector<int>
-MakeNeighborhood(const int* width,
-				 int ndim,
-				 const int* dims);
-
-vector<int>
-MakeNeighborhood(int width,
-				 int ndim,
-				 const int* dims);
 
 #endif /* ___MY_NEIGHBOR_OP_H____ */

@@ -86,6 +86,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		ReadScalar(val, prhs[3], classMode);
 		bDisplay = val == 0 ? false : true;
 	}
+	int decRate = 1; //decimation size
+	if (nrhs >= 5)
+	{
+		mxClassID classMode;
+		ReadScalar(decRate, prhs[4], classMode);
+	}
 	int minCount = blockSize*blockSize / 5 + 1;
 
 	double dWidth = cap.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
@@ -103,8 +109,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	Mat frame; //after resizing frame
 	Mat frame0; //original frame
-	int decRate = 1; //decimation size
-	Size destSize(dWidth / decRate, dHeight / decRate);
+	Size destSize(dWidth, dHeight);
 	Mat prevFrame = cv::Mat::zeros(destSize, cv::DataType<uchar>::type); //previous frame
 	int frameCount = 0;
 
@@ -162,20 +167,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		for (int i = 0; i < dims[0]; ++i)
 		{
 			MovingDot p = dots[i];
-			SetData2(F, i, 0, dims[0], dims[1], p.x);
-			SetData2(F, i, 1, dims[0], dims[1], p.y);
+			SetData2(F, i, 0, dims[0], dims[1], p.x / decRate);
+			SetData2(F, i, 1, dims[0], dims[1], p.y / decRate);
 			SetData2(F, i, 2, dims[0], dims[1], p.t);
 		}
 		plhs[0] = StoreData(F, mxINT32_CLASS, 2, dims);
 	}
 	if (nlhs >= 2)
 	{
-		const int dims[] = { frame.cols, frame.rows, frameCount };
+		const int dims[] = { frame.cols / decRate, frame.rows / decRate, frameCount/decRate};
 		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
 		for (int i = 0; i < dots.size(); ++i)
 		{
 			MovingDot p = dots[i];
-			SetData3(F, p.x, p.y, p.t, dims[0], dims[1], dims[2], (unsigned char)1);
+			SetData3(F, p.x/decRate, p.y/decRate, p.t/decRate, dims[0], dims[1], dims[2], (unsigned char)1);
 		}
 		plhs[1] = StoreData(F, mxUINT8_CLASS, 3, dims);
 	}

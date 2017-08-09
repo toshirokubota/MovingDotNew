@@ -39,7 +39,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -96,7 +96,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2015b\extern\lib\win32\microsoft;C:\opencv-3.2.0\build\install\x86\vc14\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;"opencv_core320d.lib";"opencv_highgui320d.lib";"opencv_video320d.lib";"opencv_videoio320d.lib";"opencv_videostab320d.lib";"opencv_ml320d.lib";"opencv_imgproc320d.lib";"opencv_objdetect320d.lib";%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;opencv_core320d.lib;opencv_highgui320d.lib;opencv_video320d.lib;opencv_videoio320d.lib;opencv_videostab320d.lib;opencv_ml320d.lib;opencv_imgproc320d.lib;opencv_objdetect320d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>C:\Users\Toshiro Kubota\Documents\MATLAB\Dots\$(ProjectName).dll</OutputFile>
       <TargetMachine>NotSet</TargetMachine>
       <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
@@ -129,15 +129,17 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\opencv-3.2.0\build\install\x86\vc14\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>"opencv_core320.lib";"opencv_highgui320.lib";"opencv_video320.lib";"opencv_videoio320.lib";"opencv_videostab320.lib";"opencv_ml320.lib";"opencv_imgproc320.lib";"opencv_objdetect320.lib";%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2015b\extern\lib\win32\microsoft;C:\opencv-3.2.0\build\install\x86\vc14\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;opencv_core320d.lib;opencv_highgui320d.lib;opencv_video320d.lib;opencv_videoio320d.lib;opencv_videostab320d.lib;opencv_ml320d.lib;opencv_imgproc320d.lib;opencv_objdetect320d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>..\bin\$(TargetName)$(TargetExt)</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -169,7 +171,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\szDistanceTransform.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
+    <ClCompile Include="..\src\szMyNeighborOp.cpp" />
     <ClCompile Include="FrameDifference.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>

@@ -21,13 +21,16 @@
     <ClCompile Include="..\src\szMiscOperations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\PointLight.cpp">
+    <ClCompile Include="MotionGrouping2D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Hungarian.cpp">
+    <ClCompile Include="..\src\szDistanceTransformNonIsotropic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PointLightGroupingV3.cpp">
+    <ClCompile Include="..\src\szMyNeighborOp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\CoreParticleUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,13 +50,13 @@
     <ClInclude Include="..\include\szParticleF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\PointLight.h">
+    <ClInclude Include="..\include\szDistanceTransformNonIsotropic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Hungarian.h">
+    <ClInclude Include="..\include\szMyNeighborOp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\SimplePoint.h">
+    <ClInclude Include="..\include\CoreParticleUtility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
