@@ -1,0 +1,15 @@
+FrameDifference.cpp
+The version from 2015 with MEX interface.
+
+FrameDifferenceExe.cpp
+The version from 2015. Build an stand-alone executable.
+
+FrameDifferenceSimple.cpp
+A simpler version of FrameDifference.cpp. No block based couting/sampling. It simply takes the frame difference and
+binarize the result based on a threshold.
+
+FrameDifferencesMST.cpp
+Incremental construction of minimum spanning tree as frames come in sequentially.
+
+
+

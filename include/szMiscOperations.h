@@ -112,4 +112,7 @@ Select K indices form 0..(N-1) randomly without replacement.
 vector<int>
 randomIndices(int n, int k);
 
+float
+length(float x, float y, float z, float t);
+
 #endif /* _SZ_MISC_OPERATIONS_H_ */

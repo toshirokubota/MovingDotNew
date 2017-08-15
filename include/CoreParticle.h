@@ -32,7 +32,6 @@ struct CoreParticle
 	int id;
 	float value; //generic value
 	float dval; //distance value
-				//bool selected;
 	float saliency; //new addition 08/09/2017
 	int core;
 
@@ -42,7 +41,7 @@ struct CoreParticle
 	vector<CoreParticle*> neighbors8;
 	//CoreParticle* pi; //path from the core
 	CoreParticle* src; //strong core of this particle
-	Vertex<CoreParticle*>* vertex;
+	TK::Vertex<CoreParticle*>* vertex;
 };
 
 struct CoreParticleFactory
@@ -58,6 +57,20 @@ public:
 		CoreParticle* particle = new CoreParticle(x, y, z, t, gen, lb, _id++);
 		particles.push_back(particle);
 		return particle;
+	}
+	int deleteParticle(set<CoreParticle*>& toremove)
+	{
+		int count = 0;
+		for (int i = particles.size()-1; i>=0; --i)
+		{
+			if (toremove.find(particles[i]) != toremove.end())
+			{
+				delete particles[i];
+				particles.erase(particles.begin() + i);
+				count++;
+			}
+		}
+		return count;
 	}
 	void clean()
 	{

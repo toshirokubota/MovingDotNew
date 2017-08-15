@@ -92,7 +92,7 @@ Ascendents of p are not linearly separable.
 bool
 strongMedialParticle(CoreParticle* p, int ndim, const int* dims)
 {
-	if (p->core >= 0) return p->core > 0;
+	if (p->core >= 0) return p->core;
 	//if (ndim == 2) //08/08/2017
 	{
 		if (p->x == 0 || p->y == 0 || p->x == dims[0] - 1 || p->y == dims[1] - 1)
@@ -380,7 +380,7 @@ clusterParticles(vector<CoreParticle*>& particles)
 			CoreParticle* q = p->neighbors8[j];
 			if (S.find(q) != S.end())
 			{
-				merge(nodes[i], nodes[imap[q]]);
+				TK::merge(nodes[i], nodes[imap[q]]);
 			}
 		}
 	}
@@ -1050,10 +1050,8 @@ evaluateSaliency(vector<CoreParticle*>& particles, int ndim, const int* dims)
 }
 
 void
-partition(vector<TK::Edge<CoreParticle*>*>& tree, 
-	vector<CoreParticle*>& particles, vector<int>& S,
-	set<TK::Edge<CoreParticle*>*>& toremove, 
-	int ndim, const int* dims)
+partition(vector<TK::Edge<CoreParticle*>*>& tree, vector<CoreParticle*>& particles, vector<int>& S,
+	set<TK::Edge<CoreParticle*>*>& toremove, int ndim, const int* dims)
 {
 	set<TK::Vertex<CoreParticle*>*> vertices;
 	for (int i = 0; i < tree.size(); ++i) {
@@ -1063,14 +1061,14 @@ partition(vector<TK::Edge<CoreParticle*>*>& tree,
 	vector<TK::Node<TK::Vertex<CoreParticle*>*>*> nodes;
 	map<TK::Vertex<CoreParticle*>*, TK::Node<TK::Vertex<CoreParticle*>*>*> vnmap;
 	for (set<TK::Vertex<CoreParticle*>*>::iterator it = vertices.begin(); it != vertices.end(); it++) {
-		TK::Node<TK::Vertex<CoreParticle*>*>* n = makeset(*it);
+		TK::Node<TK::Vertex<CoreParticle*>*>* n = TK::makeset(*it);
 		nodes.push_back(n);
 		vnmap[*it] = n;
 	}
 	for (int i = 0; i < tree.size(); ++i) {
 		if (toremove.find(tree[i]) == toremove.end())
 		{
-			TK::merge(vnmap[tree[i]->u], vnmap[tree[i]->v]);
+			merge(vnmap[tree[i]->u], vnmap[tree[i]->v]);
 		}
 	}
 	vector<TK::Node<TK::Vertex<CoreParticle*>*>*> reps = clusters(nodes);

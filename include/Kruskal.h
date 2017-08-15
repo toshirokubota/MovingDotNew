@@ -1,18 +1,20 @@
 // Kruskal.cpp : Defines the entry point for the console application.
 //
-
+#ifndef ___KRUSKAL_H___
+#define ___KRUSKAL_H___
 #include <vector>
 #include <algorithm>
+#include <map>
 using namespace std;
 #include <Graph.h>
 #include <DisjointSet.h>
 
 template<class T>
-vector<Edge<T>*>
-Kruskal(vector<Edge<T>*>& edges, 
-		vector<Vertex<T>*>& vertices)
+vector<TK::Edge<T>*>
+Kruskal(vector<TK::Edge<T>*>& edges,
+		vector<TK::Vertex<T>*>& vertices)
 {
-	vector<Edge<T>*> mst;
+	vector<TK::Edge<T>*> mst;
 	//sortEdges(edges, 0, edges.size()-1);
 	vector<pair<float, int>> pairs(edges.size());
 	for (int i = 0; i < edges.size(); ++i)
@@ -21,11 +23,11 @@ Kruskal(vector<Edge<T>*>& edges,
 	}
 	sort(pairs.begin(), pairs.end());
 
-	vector<Node<Vertex<T>*>*> nodes;
-	map<Vertex<T>*, int> vmap;
+	vector<TK::Node<TK::Vertex<T>*>*> nodes;
+	map<TK::Vertex<T>*, int> vmap;
 	for(int i=0; i<vertices.size(); ++i)
 	{
-		nodes.push_back(makeset(vertices[i]));
+		nodes.push_back(TK::makeset(vertices[i]));
 		vmap[vertices[i]] = i;
 	}
 
@@ -49,17 +51,17 @@ Kruskal(vector<Edge<T>*>& edges,
 
 #include <set>
 template<class T>
-vector<Edge<T>*>
-Kruskal(vector<Edge<T>*>& edges)
+vector<TK::Edge<T>*>
+Kruskal(vector<TK::Edge<T>*>& edges)
 {
-	set<Vertex<T>*> V;
+	set<TK::Vertex<T>*> V;
 	for(int i=0; i<edges.size(); ++i)
 	{
 		V.insert(edges[i]->u);
 		V.insert(edges[i]->v);
 	}
-	vector<Vertex<T>*> vertices;
-	for(set<Vertex<T>*>::iterator p = V.begin(); p!=V.end(); p++)
+	vector<TK::Vertex<T>*> vertices;
+	for(set<TK::Vertex<T>*>::iterator p = V.begin(); p!=V.end(); p++)
 	{
 		vertices.push_back(*p);
 	}
@@ -67,13 +69,15 @@ Kruskal(vector<Edge<T>*>& edges)
 }
 
 template<class T>
-vector<Edge<T>*>
-Kruskal(vector<Vertex<T>*>& vertices)
+vector<TK::Edge<T>*>
+Kruskal(vector<TK::Vertex<T>*>& vertices)
 {
-	vector<Edge<T>*> edges;
+	vector<TK::Edge<T>*> edges;
 	for (int i = 0; i < vertices.size(); ++i)
 	{
 		edges.insert(edges.end(), vertices[i]->aList.begin(), vertices[i]->aList.end());
 	}
 	return Kruskal(edges, vertices);
 }
+
+#endif /* ___KRUSKAL_H___ */

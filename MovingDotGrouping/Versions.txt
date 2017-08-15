@@ -1,0 +1,5 @@
+MovingDotGrouping.cpp
+Application of the propagation->graph construction -> MST -> partition, as applied to the ventricle segmentation, on the video segmentation.
+
+MovingDotGroupingV2.cpp
+Attempt to extend MovingDotGrouping.cpp in a temporal sequential way.

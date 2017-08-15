@@ -520,3 +520,8 @@ randomIndices(int n, int k)
 	return ri;
 }*/
 
+float
+length(float x, float y, float z, float t)
+{
+	return sqrt(x*x + y*y + z*z + t*t);
+}

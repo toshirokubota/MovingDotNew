@@ -2,6 +2,7 @@
 #include <szMexUtility.h>
 #include <NeighborhoodFactory.h>
 #include <DisjointSet.h>
+#include <szDistanceTransformNonIsotropic.h>
 #include <map>
 using namespace std;
 
@@ -75,6 +76,19 @@ generateParticleMap(vector<unsigned char>& L,
 			mp[i] = p;
 		}
 	}
+	{
+		vector<float> D(L.size(), 0.0f);
+		vector<unsigned char> iL(L.size(), 0);
+		vector<float> vs(ndim, 1.0f);
+		DistanceTransformEuclidF(D, iL, vs, ndim, dims);
+		for (int i = 0; i < D.size(); ++i)
+		{
+			if (mp[i] != NULL)
+			{
+				mp[i]->dval = D[i];
+			}
+		}
+	}
 	return mp;
 }
 
@@ -132,11 +146,11 @@ vector<vector<CoreParticle*>>
 clusterParticles(vector<CoreParticle*>& particles)
 {
 	set<CoreParticle*> S;
-	vector<Node<CoreParticle*>*> nodes;
+	vector<TK::Node<CoreParticle*>*> nodes;
 	map<CoreParticle*, int> imap;
 	for (int i = 0; i < particles.size(); ++i)
 	{
-		Node<CoreParticle*>* n = makeset(particles[i]);
+		TK::Node<CoreParticle*>* n = TK::makeset(particles[i]);
 		nodes.push_back(n);
 		imap[particles[i]] = i;
 		S.insert(particles[i]);
@@ -153,7 +167,7 @@ clusterParticles(vector<CoreParticle*>& particles)
 			}
 		}
 	}
-	vector<Node<CoreParticle*>*> rep = clusters(nodes);
+	vector<TK::Node<CoreParticle*>*> rep = clusters(nodes);
 	vector<vector<CoreParticle*>> group(rep.size());
 	for (int i = 0; i < nodes.size(); ++i)
 	{
@@ -166,3 +180,111 @@ clusterParticles(vector<CoreParticle*>& particles)
 	}
 	return group;
 }
+
+bool
+surfaceParticle(CoreParticle* p, int ndim, const int* dims)
+{
+	if (ndim == 2) //08/08/2017
+	{
+		if (p->x == 0 || p->y == 0 || p->x == dims[0] - 1 || p->y == dims[1] - 1)
+		{
+			return false;  //consider image to be continuing beyond the boundary.
+		}
+	}
+	else if (ndim == 3) //08/10/2017
+	{
+		if (p->x == 0 || p->y == 0 || p->x == dims[0] - 1 || p->y == dims[1] - 1 || p->z == 0 || p->z == dims[2] - 1)
+		{
+			return false;  //consider image to be continuing beyond the boundary.
+		}
+	}
+	else if (ndim == 4) //08/10/2017
+	{
+		if (p->x == 0 || p->y == 0 || p->x == dims[0] - 1 || p->y == dims[1] - 1 || p->z == 0 || p->z == dims[2] - 1 || p->t == 0 || p->t == dims[3] - 1)
+		{
+			return false;  //consider image to be continuing beyond the boundary.
+		}
+	}
+	int ns = NeighborhoodFactory::getInstance(ndim).neighbor4.size();
+	/*if (_EightNeighbor)
+	{
+		ns = NeighborhoodFactory::getInstance(ndim).neighbor8.size();
+	}*/
+	return p->neighbors.size() < ns;
+}
+
+bool
+medialParticle(CoreParticle* p, int ndim)
+{
+	return p->ascendents.size() >= 2 * (ndim - 1) || p->descendents.size() == 0;
+}
+
+/*
+Ascendents of p are not linearly separable.
+*/
+bool
+strongMedialParticle(CoreParticle* p, int ndim, const int* dims)
+{
+	if (p->core >= 0) return p->core>0;
+	//if (ndim == 2) //08/08/2017
+	{
+		if (p->x == 0 || p->y == 0 || p->x == dims[0] - 1 || p->y == dims[1] - 1)
+		{
+			p->core = 0;
+			return false;  //consider image to be continuing beyond the boundary.
+		}
+	}
+	/*else if (ndim == 3) //08/10/2017
+	{
+	if (p->x == 0 || p->y == 0 || p->x == dims[0] - 1 || p->y == dims[1] - 1 || p->z == 0 || p->z == dims[2] - 1)
+	{
+	p->core = 0;
+	return false;  //consider image to be continuing beyond the boundary.
+	}
+	}
+	else if (ndim == 4) //08/10/2017
+	{
+	if (p->x == 0 || p->y == 0 || p->x == dims[0] - 1 || p->y == dims[1] - 1 || p->z == 0 || p->z == dims[2] - 1 || p->t == 0 || p->t == dims[3] - 1)
+	{
+	p->core = 0;
+	return false;  //consider image to be continuing beyond the boundary.
+	}
+	}*/
+	if (p->descendents.size() == 0)
+	{
+		p->core = 2;
+		//return true;
+	}
+	else
+	{
+		p->core = 0;
+	}
+	if (ndim == 2 || ndim == 3)
+	{
+		/*if (p->ascendents.size() >= 2 * (ndim - 1))
+		{
+		p->core = 1;
+		}*/
+		/*if (p->dval >= 7.0f)
+		{
+		bool blmax = true;
+		for (int i = 0; i<p->neighbors8.size(); ++i)
+		{
+		if (p->neighbors8[i]->dval >= p->dval)
+		{
+		blmax = false;
+		break;
+		}
+		}
+		if (blmax) p->core = 1;
+		}*/
+	}
+	return p->core > 0;
+}
+
+bool
+inflectionParticle(CoreParticle* p, int ndim)
+{
+	//return surfaceParticle(p, ndim) && p->descendents.size() >= 2;  //ndim;
+	return false; //disabled -- 08/08/2017
+}//

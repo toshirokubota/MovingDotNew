@@ -33,7 +33,7 @@ SetVoxel(vector<T>& A,
 	}
 	else
 	{
-		mexErrMsgTxt("SetVoxel: unsupported number of dimensions. It has to be between 1 and 4.");
+		//mexErrMsgTxt("SetVoxel: unsupported number of dimensions. It has to be between 1 and 4.");
 		return false;
 	}
 }
@@ -64,7 +64,7 @@ GetVoxel(const vector<T>& A,
 	}
 	else
 	{
-		mexErrMsgTxt("SetVoxel: unsupported number of dimensions. It has to be between 1 and 4.");
+		//mexErrMsgTxt("SetVoxel: unsupported number of dimensions. It has to be between 1 and 4.");
 		return defaultValue;
 	}
 }
@@ -81,3 +81,13 @@ setupParticleNeighbors(vector<CoreParticle*>& mp,
 
 vector<vector<CoreParticle*>>
 clusterParticles(vector<CoreParticle*>& particles);
+
+bool
+surfaceParticle(CoreParticle* p, int ndim, const int* dims);
+
+bool
+medialParticle(CoreParticle* p, int ndim);
+
+
+bool
+strongMedialParticle(CoreParticle* p, int ndim, const int* dims);
