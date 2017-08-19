@@ -161,6 +161,23 @@ drawEdges(cv::Mat& M,
 	}
 }
 
+void
+drawMovingDots(cv::Mat& M,
+	vector<TK::MovingDot*>& dots)
+{
+	for (int i = 0; i < dots.size(); ++i)
+	{
+		CoreParticle* p = dots[i]->p;
+		cv::circle(M, cv::Point2i(p->x, p->y), 0, cv::Scalar(255));
+		if (dots[i]->match != NULL)
+		{
+			CoreParticle* q = dots[i]->match->p;
+			cv::circle(M, cv::Point2i(q->x, q->y), 0, cv::Scalar(128));
+			cv::line(M, cv::Point2i(p->x, p->y), cv::Point2i(q->x, q->y), cv::Scalar(128));
+		}
+	}
+}
+
 /*
 Break a graph into smaller branches.
 A branch is used to estimate the motion at a semi-macro level.
@@ -206,7 +223,10 @@ cutTrees(vector<TK::MovingDot*>& dots, float thres)
 	vector<CoreBranch> branches;
 	for (int i = 0; i < grouped.size(); ++i)
 	{
-		branches.push_back(grouped[i]);
+		//if (grouped[i].size() >= 20)
+		{
+			branches.push_back(CoreBranch(grouped[i]));
+		}
 	}
 
 	for (int i = 0; i < nodes.size(); ++i)
@@ -219,35 +239,48 @@ cutTrees(vector<TK::MovingDot*>& dots, float thres)
 
 void
 estimateMotions(vector<CoreBranch>& branch0, vector<vector<CoreBranch>>& branches, 
+			float thres,
 			int ndim, const int* dims)
 {
-	float maxs = 0;
-	int jx = branches.size() - 1;
-	int idx = -1;
 	for (int i = 0; i < branch0.size(); ++i)
 	{
-		for (int j = 0; j < branches[jx].size(); ++j)
+		for (int j = 0; j < branch0[i].dots.size(); ++j)
 		{
-			float s = branch0[i].similarityMeasure(branches[jx][j]);
-			if (s > maxs)
-			{
-				maxs = s;
-				idx = j;
-			}
+			branch0[i].dots[j]->match = NULL;
 		}
+
+		float maxs = 0;
+		int idx = -1;
+		int jx = (int)branches.size() - 1;
+		while (jx >= Max(0, (int)branches.size() - 5))
+		{
+			for (int j = 0; j < branches[jx].size(); ++j)
+			{
+				float s = branch0[i].similarityMeasure(branches[jx][j]);
+				if (s > maxs)
+				{
+					maxs = s;
+					idx = j;
+				}
+			}
+			if (maxs >= thres) break; //found a good match
+			jx--;
+		}
+
+		if (maxs < thres) continue; //not good enough
+
 		float dx = branch0[i].center[0] - branches[jx][idx].center[0];
 		float dy = branch0[i].center[1] - branches[jx][idx].center[1];
 		for (int j = 0; j < branch0[i].dots.size(); ++j)
 		{
 			float mind = std::numeric_limits<float>::infinity();
 			TK::MovingDot* dot = branch0[i].dots[j];
-			dot->match = NULL;
 			for (int k = 0; k < branches[jx][idx].dots.size(); k++)
 			{
 				TK::MovingDot* dot2 = branches[jx][idx].dots[k];
 				float dx2 = dot->x - dx - dot2->x;
 				float dy2 = dot->y - dy - dot2->y;
-				float d = sqrt(dx*dx + dy*dy);
+				float d = sqrt(dx2*dx2 + dy2*dy2);
 				if (d < mind)
 				{
 					dot->match = dot2;
@@ -354,6 +387,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	vector<vector<TK::Edge<CoreParticle*>*>> mst;
 	vector<vector<CoreBranch>> branches;
 	vector<TK::MovingDot*> dots;
+	vector<cv::Mat> frames;
 
 	int nframes = 2; //this many previous frames are considered for MST
 	float tscale = 1.0f; //temporal unit copmared to the pixel size.
@@ -378,6 +412,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			prevFrame = gray;
 			continue; //skip the first frame since there is no previous frame, yet
 		}
+		frames.push_back(gray);
 
 		cv::Mat diff = gray - prevFrame;
 		prevFrame = gray;
@@ -442,7 +477,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		}
 		else
 		{
-			estimateMotions(branch0, branches, ndim, dims);
+			estimateMotions(branch0, branches, decRate / 20.0f, ndim, dims);
 			for (int i = 0; i < vertices.size(); ++i)
 			{
 				TK::Vertex<CoreParticle*>* u = vertices[i];
@@ -468,7 +503,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				drawEdges(blank, mst, Max(0, mst.size() - 3), mst.size() - 1);
 			}
 			cv::Mat edg = cv::Mat::zeros(destSize, cv::DataType<uchar>::type); //blank frame
-			cv::Canny(frame, edg, 100, 200);
+			//cv::Canny(frame, edg, 100, 200);
+			drawMovingDots(edg, cores0);
 
 			cv::imshow("input", frame); //show the frame in "MyVideo" window
 			cv::imshow("motion", edg);
@@ -481,9 +517,26 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		}
 		CoreParticleFactory::getInstance().deleteParticle(noncore);
 	}
-	cap.release();
+	cap.release(); 
 
 	cv::destroyAllWindows();
+	if (nlhs >= 1)
+	{
+		const int dims[] = { frame.cols, frame.rows, frames.size() };
+		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
+		for (int i = 0; i < frames.size(); ++i)
+		{
+			for (int j = 0; j < frame.rows; ++j)
+			{
+				unsigned char* ptr = frames[i].ptr(j);
+				for (int k = 0; k < frame.cols; ++k)
+				{
+					SetData3(F, k, j, i, dims[0], dims[1], dims[2], ptr[k]);
+				}
+			}
+		}
+		plhs[0] = StoreData(F, mxUINT8_CLASS, 3, dims);
+	}
 
 	TK::GraphFactory<CoreParticle*>::GetInstance().Clean();
 	CoreParticleFactory::getInstance().clean();

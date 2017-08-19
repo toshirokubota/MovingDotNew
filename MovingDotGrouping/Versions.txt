@@ -3,3 +3,9 @@ Application of the propagation->graph construction -> MST -> partition, as appli
 
 MovingDotGroupingV2.cpp
 Attempt to extend MovingDotGrouping.cpp in a temporal sequential way.
+Frame difference -> skeletons -> break skeletons (branches) -> motion esitmation of branches -> grouping of branches.
+
+MovingDotGroupingV3.cpp
+//Try a standard morphological skeletonization instead of core formation procedure.
+The similarity measure for branches (used in grouping of branches) considers their ascendants.
+

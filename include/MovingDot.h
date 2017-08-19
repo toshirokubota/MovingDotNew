@@ -13,6 +13,7 @@ namespace TK
 			this->t = p->t;
 			dx = dy = dz = 0.0f;
 			this->p = p;
+			label = 0;
 			match = NULL;
 		}
 		int x;
@@ -24,5 +25,6 @@ namespace TK
 		float dz;
 		CoreParticle* p;
 		MovingDot* match;
+		int label;
 	};
 };

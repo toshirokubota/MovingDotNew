@@ -95,7 +95,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -179,7 +179,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;../include;C:\Program Files (x86)\MATLAB\R2015b\extern\include;C:\opencv-3.2.0\build\install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -206,7 +206,7 @@
       <DataExecutionPrevention />
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2015b\extern\lib\win32\microsoft;C:\opencv-3.2.0\build\install\x86\vc14\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;opencv_core320d.lib;opencv_highgui320d.lib;opencv_video320d.lib;opencv_videoio320d.lib;opencv_videostab320d.lib;opencv_ml320d.lib;opencv_imgproc320d.lib;opencv_objdetect320d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <Bscmake>
@@ -257,12 +257,15 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\CoreParticleMakeGraph.cpp" />
+    <ClCompile Include="..\src\CoreParticleUtility.cpp" />
+    <ClCompile Include="..\src\Covariance.cpp" />
     <ClCompile Include="..\src\NeighborhoodFactory.cpp" />
     <ClCompile Include="..\src\szDistanceTransformNonIsotropic.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
     <ClCompile Include="..\src\szMyNeighborOp.cpp" />
-    <ClCompile Include="MovingDotGrouping.cpp" />
+    <ClCompile Include="MovingDotGroupingV3B.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\mexFileIO.h" />
@@ -272,6 +275,7 @@
     <ClInclude Include="..\include\szMiscOperations.h" />
     <ClInclude Include="..\include\szMyNeighborOp.h" />
     <ClInclude Include="..\include\szParticleF.h" />
+    <ClInclude Include="SimilarityMatrix.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

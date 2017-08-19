@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7DFFEF93-2DA5-4491-ACE6-2B13D71A80D2}</ProjectGuid>
+    <ProjectGuid>{831E07F5-1201-4708-A2B5-FDB7F45DAB6B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>MotionDetect</RootNamespace>
-    <ProjectName>MotionDetect</ProjectName>
+    <RootNamespace>Video2Images</RootNamespace>
+    <ProjectName>Video2Mat</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -175,15 +175,10 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\CoreParticleMakeGraph.cpp" />
-    <ClCompile Include="..\src\CoreParticleUtility.cpp" />
-    <ClCompile Include="..\src\NeighborhoodFactory.cpp" />
-    <ClCompile Include="..\src\szDistanceTransform.cpp" />
-    <ClCompile Include="..\src\szDistanceTransformNonIsotropic.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
     <ClCompile Include="..\src\szMyNeighborOp.cpp" />
-    <ClCompile Include="skeletonTest.cpp" />
+    <ClCompile Include="Video2Mat.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
