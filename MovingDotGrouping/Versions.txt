@@ -9,3 +9,5 @@ MovingDotGroupingV3.cpp
 //Try a standard morphological skeletonization instead of core formation procedure.
 The similarity measure for branches (used in grouping of branches) considers their ascendants.
 
+MovingDotGroupingTester.cpp
+Isolate grouping part to unit-test the part of the system.

@@ -5,6 +5,7 @@ namespace TK
 {
 	class MovingDot {
 	public:
+		static int _id;
 		MovingDot(CoreParticle* p)
 		{
 			this->x = p->x;
@@ -15,11 +16,13 @@ namespace TK
 			this->p = p;
 			label = 0;
 			match = NULL;
+			id = _id++;
 		}
 		int x;
 		int y;
 		int z;
 		int t;
+		int id;
 		float dx;
 		float dy;
 		float dz;
