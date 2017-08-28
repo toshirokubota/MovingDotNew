@@ -11,3 +11,17 @@ The similarity measure for branches (used in grouping of branches) considers the
 
 MovingDotGroupingTester.cpp
 Isolate grouping part to unit-test the part of the system.
+
+MovingDotGroupingTesterV2.cpp
+Implement different similarity measures for intra-frame branches and inter-frame ones. Intra-frame branches.
+
+MovingDotGroupingTesterV3.cpp
+Grouping of clusters without point-wise correspondence.
+
+MovingDotGroupingTesterV4.cpp
+Grouping using both previous and next frames. Instead of just causal way.
+
+MovingDotGroupingTesterV5.cpp
+Implement branch distance measure without velocity, which turns out to be too sensitive.
+Using Hungarian to find correspondence.
+

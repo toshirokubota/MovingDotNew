@@ -39,7 +39,10 @@
     <ClCompile Include="..\src\Covariance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MovingDotGroupingTester.cpp">
+    <ClCompile Include="MovingDotGroupingTesterV5.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Hungarian.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

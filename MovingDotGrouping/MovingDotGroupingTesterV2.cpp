@@ -72,11 +72,38 @@ struct CoreBranch
 		ascendant = NULL;
 		id = _id++;
 	}
-	float similarityMeasure0(const CoreBranch* br) const
+	float intraSimilarityMeasure(const CoreBranch* br) const
 	{
-		float alpha = 0.25f;
-		//float dx = center[0] - br->center[0];
-		//float dy = center[1] - br->center[1];
+		float alpha = 0.5f;
+		float sd = 0;
+		float minMin = std::numeric_limits<float>::infinity();
+		for (int i = 0; i < dots.size(); ++i)
+		{
+			TK::MovingDot* p = dots[i];
+			TK::MovingDot* sel = NULL;
+			float mind = std::numeric_limits<float>::infinity();
+			for (int j = 0; j < br->dots.size(); ++j)
+			{
+				TK::MovingDot* q = br->dots[j];
+				float d = sqrt((p->x - q->x)*(p->x - q->x) + (p->y - q->y)*(p->y - q->y));
+				if (d < mind)
+				{
+					mind = d;
+					sel = q;
+				}
+			}
+			sd += mind*mind;
+			minMin = Min(minMin, mind);
+		}
+		sd = (sd / dots.size() + minMin*minMin) / 2.0; //average min-difference plus min-min
+		float dvx = velocity[0] - br->velocity[0];
+		float dvy = velocity[1] - br->velocity[1];
+		float d = sqrt(alpha*(sd) + 100*(1.0 - alpha)*(dvx*dvx + dvy*dvy));
+		return 1.0 / (1.0 + d);
+	}
+	float interSimilarityMeasure(const CoreBranch* br) const
+	{
+		float alpha = 0.5f;
 		float svx = 0, svy = 0, sd=0;
 		for (int i = 0; i < dots.size(); ++i)
 		{
@@ -103,30 +130,6 @@ struct CoreBranch
 		float dvy = vy - br->velocity[1];
 		float d = sqrt(alpha*(sd/dots.size()) + (1.0-alpha)*(dvx*dvx + dvy*dvy));
 		return 1.0 / (1.0 + d);
-	}
-
-	float similarityMeasure(const  CoreBranch* br) const
-	{
-		int ngen = 1;
-		set<const CoreBranch*> S;
-		S.insert(this);
-		set<const CoreBranch*> T;
-		T.insert(br);
-		float minVal = std::numeric_limits<float>::infinity();
-		for (int i = 0; i < ngen; ++i)
-		{
-			float maxVal = 0;
-			for (set<const CoreBranch*>::iterator it = S.begin(); it != S.end(); ++it)
-			{
-				for (set<const CoreBranch*>::iterator jt = T.begin(); jt != T.end(); ++jt)
-				{
-					float val = (*it)->similarityMeasure0(*jt);
-					if (val > maxVal) maxVal = val;
-				}
-			}
-			if (maxVal < minVal) minVal = maxVal;
-		}
-		return minVal;
 	}
 
 	void estimateVelocity() {
@@ -349,7 +352,7 @@ estimateMotions(vector<CoreBranch*>& branch0, vector<vector<CoreBranch*>>& branc
 		{
 			for (int j = 0; j < branches[jx].size(); ++j)
 			{
-				float s = branch0[i]->similarityMeasure(branches[jx][j]);
+				float s = branch0[i]->interSimilarityMeasure(branches[jx][j]);
 				if (s > maxs)
 				{
 					maxs = s;
@@ -485,7 +488,7 @@ mergeCoreBranches(vector<CoreBranch*> branches, float thres, float rate, int tm)
 				for (int j = 0; j < branches.size(); ++j)
 				{
 					if (i == j) continue;
-					float sval = branches[i]->similarityMeasure(branches[j]);
+					float sval = branches[i]->intraSimilarityMeasure(branches[j]);
 					if (sval > maxval)
 					{
 						pr.first = branches[i];
@@ -522,7 +525,7 @@ mergeCoreBranches(vector<CoreBranch*> branches, float thres, float rate, int tm)
 			for (int j = 0; j < branches.size(); ++j)
 			{
 				//float sval = (branches[i]->similarityMeasure(branches[j]) + branches[j]->similarityMeasure(branches[i])) / 2.0;
-				float sval = branches[i]->similarityMeasure(branches[j]);
+				float sval = branches[i]->intraSimilarityMeasure(branches[j]);
 				printf("%3.3f ", sval);
 			}
 			printf("\n");

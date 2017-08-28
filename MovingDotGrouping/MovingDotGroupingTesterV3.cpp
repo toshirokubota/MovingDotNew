@@ -69,77 +69,30 @@ struct CoreBranch
 		}
 		velocity[0] = sdx / dots.size(); 
 		velocity[1] = sdy / dots.size();
-		ascendant = NULL;
 		id = _id++;
 	}
-	float similarityMeasure0(const CoreBranch* br) const
-	{
-		float alpha = 0.25f;
-		//float dx = center[0] - br->center[0];
-		//float dy = center[1] - br->center[1];
-		float svx = 0, svy = 0, sd=0;
-		for (int i = 0; i < dots.size(); ++i)
-		{
-			TK::MovingDot* p = dots[i];
-			TK::MovingDot* sel = NULL;
-			float mind = std::numeric_limits<float>::infinity();
-			for (int j = 0; j < br->dots.size(); ++j)
-			{
-				TK::MovingDot* q = br->dots[j];
-				float d = sqrt((p->x - q->x)*(p->x - q->x) + (p->y - q->y)*(p->y - q->y));
-				if (d < mind)
-				{
-					mind = d;
-					sel = q;
-				}
-			}
-			svx += p->x - sel->x;
-			svy += p->y - sel->y;
-			sd += mind*mind;
-		}
-		float vx = svx / br->dots.size();
-		float vy = svy / br->dots.size();
-		float dvx = vx - br->velocity[0];
-		float dvy = vy - br->velocity[1];
-		float d = sqrt(alpha*(sd/dots.size()) + (1.0-alpha)*(dvx*dvx + dvy*dvy));
-		return 1.0 / (1.0 + d);
-	}
-
-	float similarityMeasure(const  CoreBranch* br) const
-	{
-		int ngen = 1;
-		set<const CoreBranch*> S;
-		S.insert(this);
-		set<const CoreBranch*> T;
-		T.insert(br);
-		float minVal = std::numeric_limits<float>::infinity();
-		for (int i = 0; i < ngen; ++i)
-		{
-			float maxVal = 0;
-			for (set<const CoreBranch*>::iterator it = S.begin(); it != S.end(); ++it)
-			{
-				for (set<const CoreBranch*>::iterator jt = T.begin(); jt != T.end(); ++jt)
-				{
-					float val = (*it)->similarityMeasure0(*jt);
-					if (val > maxVal) maxVal = val;
-				}
-			}
-			if (maxVal < minVal) minVal = maxVal;
-		}
-		return minVal;
-	}
-
 	void estimateVelocity() {
 		if (dots.empty()) return;
 
 		float sx = 0, sy = 0;
-		for (int i = 0; i < dots.size(); ++i)
+		int count = 0;
+		for (set<CoreBranch*>::iterator it=ascendants.begin(); it != ascendants.end(); ++it)
 		{
-			sx += dots[i]->dx;
-			sy += dots[i]->dy;
+			CoreBranch* br = *it;
+			sx += br->center[0] * br->dots.size();
+			sy += br->center[1] * br->dots.size();
+			count += br->dots.size();
 		}
-		velocity[0] = sx / dots.size();
-		velocity[1] = sy / dots.size();
+		if (count > 0)
+		{
+			velocity[0] = center[0] - sx / count;
+			velocity[1] = center[1] - sy / count;
+		}
+		else
+		{
+			velocity[0] = 0;
+			velocity[1] = 0;
+		}
 	}
 
 	vector<TK::MovingDot*> dots;
@@ -151,7 +104,7 @@ struct CoreBranch
 	int label;
 	float velocity[2];
 	set<CoreBranch*> decendants;
-	CoreBranch* ascendant;
+	set<CoreBranch*> ascendants;
 };
 
 int CoreBranch::_id = 0;
@@ -322,213 +275,238 @@ cutTrees(vector<TK::MovingDot*>& dots, float thres)
 	return branches;
 }
 
-/*
-For each new branch, find the best correspondence in the previous frames (going back to
-at most 5 frames).
-Using the corresponding branches, find matching pairs of moving dots and use them to 
-estimate the velocity.
-Finally, refine the velocity estimate of the new branch using dot pairs.
-*/
-void
-estimateMotions(vector<CoreBranch*>& branch0, vector<vector<CoreBranch*>>& branches,
-	float thres,
-	int ndim, const int* dims)
+TK::MovingDot*
+closestPoint(float x, float y, vector<TK::MovingDot*>& dots, float& minD)
 {
-	for (int i = 0; i < branch0.size(); ++i)
+	minD = std::numeric_limits<float>::infinity();
+	TK::MovingDot* closest = NULL;
+	for (int i = 0; i < dots.size(); ++i)
 	{
-		CoreBranch* br = branch0[i];
-		for (int j = 0; j < br->dots.size(); ++j)
+		float d = length(x - dots[i]->x, y- dots[i]->y, 0.0f, 0.0f);
+		if (d < minD)
 		{
-			br->dots[j]->match = NULL;
+			minD = d;
+			closest = dots[i];
 		}
-
-		float maxs = 0;
-		int idx = -1;
-		int jx = (int)branches.size() - 1;
-		while (jx >= Max(0, (int)branches.size() - 5))
-		{
-			for (int j = 0; j < branches[jx].size(); ++j)
-			{
-				float s = branch0[i]->similarityMeasure(branches[jx][j]);
-				if (s > maxs)
-				{
-					maxs = s;
-					idx = j;
-				}
-			}
-			if (maxs >= thres) break; //found a good match
-			jx--;
-		}
-
-		if (maxs < thres) continue; //not good enough
-		br->ascendant = branches[jx][idx];
-		br->ascendant->decendants.insert(br);
-
-		float dx = br->center[0] - br->ascendant->center[0];
-		float dy = br->center[1] - br->ascendant->center[1];
-		for (int j = 0; j < br->dots.size(); ++j)
-		{
-			float mind = std::numeric_limits<float>::infinity();
-			TK::MovingDot* dot = br->dots[j];
-			for (int k = 0; k < br->ascendant->dots.size(); k++)
-			{
-				TK::MovingDot* dot2 = br->ascendant->dots[k];
-				float dx2 = dot->x - dot2->x;
-				float dy2 = dot->y - dot2->y;
-				float d = sqrt(dx2*dx2 + dy2*dy2);
-				if (d < mind)
-				{
-					dot->match = dot2;
-					dot->dx = dot->x - dot2->x;
-					dot->dy = dot->y - dot2->y;
-					mind = d;
-				}
-			}
-		}
-		br->estimateVelocity();
 	}
+	return closest;
 }
 
-#include <SimilarityMatrix.h>
+/*
+Establish correspondence between a branch in the current frame and those in the previous frame.
+The routine handles a case where multiple branches merge into one in the current frame.
+When found, the merged branch is splitted into multiple.
+*/
+vector<CoreBranch*> 
+establishCorresponedence(vector<CoreBranch*>& current,
+	vector<vector<CoreBranch*>>& past,
+	float thres)
+{
+	vector<CoreBranch*> result;
+	if(!past.empty())
+	{
+		vector<CoreBranch*> prev = past[past.size() - 1];
+		for (int i = 0; i < current.size(); ++i)
+		{
+			CoreBranch* br = current[i];
+			vector<TK::MovingDot*> dots = br->dots;
+			vector<CoreBranch*> matches;
+			for (int j = 0; j < prev.size(); ++j)
+			{
+				CoreBranch* bs = prev[j];
+				vector<TK::MovingDot*> dots2 = bs->dots;
+				float maxD = 0;
+				for (int k = 0; k < dots2.size(); ++k)
+				{
+					float mind;
+					closestPoint(dots2[k]->x+bs->velocity[0], dots2[k]->y+bs->velocity[1], dots, mind);
+					if (mind > maxD)
+					{
+						maxD = mind;
+					}
+				}
+				if (maxD <= thres)
+				{
+					matches.push_back(bs);
+				}
+			}
+			if (matches.size() == 0)
+			{
+				result.push_back(br);
+			}
+			else if (matches.size() == 1)
+			{
+				br->ascendants.insert(matches[0]);
+				matches[0]->decendants.insert(br);
+				result.push_back(br);
+			}
+			else //if (matches.size() > 1)
+			{
+				//for each dot in matched branch, find the closest one in the current branch.
+				map<TK::MovingDot*, int> dmap;
+				for (int j = 0; j < dots.size(); ++j)
+				{
+					float mind = std::numeric_limits<float>::infinity();
+					int idx = -1;
+					for (int k = 0; k < matches.size(); ++k)
+					{
+						float d;
+						closestPoint(dots[j]->x-matches[k]->velocity[0], dots[j]->y - matches[k]->velocity[1], matches[k]->dots, d);
+						if (d < mind)
+						{
+							mind = d;
+							idx = k;
+						}
+					}
+					dmap[dots[j]] = idx;
+				}
+				vector<vector<TK::MovingDot*>> splitted(matches.size());
+				for (int j = 0; j < dots.size(); ++j)
+				{
+					splitted[dmap[dots[j]]].push_back(dots[j]);
+				}
+				for (int j = 0; j < matches.size(); ++j)
+				{
+					if (!splitted[j].empty())
+					{
+						CoreBranch* newbr = new CoreBranch(splitted[j]);
+						newbr->ascendants.insert(matches[j]);
+						matches[j]->decendants.insert(newbr);
+						result.push_back(newbr);
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		result = current;
+	}
+	for (int i = 0; i < result.size(); ++i)
+	{
+		result[i]->estimateVelocity();
+	}
+
+	return result;
+}
+
+float
+distance(CoreBranch* a, CoreBranch* b)
+{
+	float d1 = length(a->center[0] - b->center[0], a->center[1] - b->center[1], 0.0f, 0.0f);
+	float d2;
+	if (a->ascendants.empty() && b->ascendants.empty())
+	{ //velocity is not available.
+		d2 = 1.0;
+	}
+	else
+	{
+		d2 = length(a->velocity[0] - b->velocity[0], a->velocity[1] - b->velocity[1], 0.0f, 0.0f);
+	}
+	return sqrt(d1 * d2);
+}
+
+float differenceBranches(CoreBranch* a, CoreBranch* b, int ngen)
+{
+	float sumD = 0;
+	int count = 0;
+	set<CoreBranch*> S;
+	set<CoreBranch*> T;
+	S.insert(a);
+	T.insert(b);
+	for (int i = 0; i < ngen; ++i)
+	{
+		for (set<CoreBranch*>::iterator it = S.begin(); it != S.end(); ++it)
+		{
+			for (set<CoreBranch*>::iterator jt = T.begin(); jt != T.end(); ++jt)
+			{
+				float dval = distance(*it, *jt);
+				sumD += dval;
+				count++;
+			}
+		}
+		set<CoreBranch*> S2;
+		for (set<CoreBranch*>::iterator it = S.begin(); it != S.end(); ++it)
+		{
+			S2.insert((*it)->ascendants.begin(), (*it)->ascendants.end());
+		}
+		set<CoreBranch*> T2;
+		for (set<CoreBranch*>::iterator it = T.begin(); it != T.end(); ++it)
+		{
+			T2.insert((*it)->ascendants.begin(), (*it)->ascendants.end());
+		}
+		S = S2;
+		T = T2;
+	}
+
+	return sumD / count;
+}
 
 /*
-Merge branches if they are close enough in both spatial and velocity.
-Use centroid based hierarchical clustering.
+Merge branches in the current frame if they are likely to be moving in the same direction.
 */
-/*vector<CoreBranch*>
-mergeCoreBranches0(vector<CoreBranch*> branches, float thres, float rate, int tm)
+vector<CoreBranch*> 
+mergeBranches(vector<CoreBranch*>& branches, float thres)
 {
-	//int tm = branches[0]->dots[0]->t;
-	SimilarityMatrix sm(branches.size());
+	vector<TK::Node<CoreBranch*>*> nodes;
+	for (int i = 0; i < branches.size(); ++i)
+	{
+		nodes.push_back(TK::makeset(branches[i]));
+	}
 	for (int i = 0; i < branches.size(); ++i)
 	{
 		for (int j = i + 1; j < branches.size(); ++j)
 		{
-			float sval = branches[i]->similarityMeasure(branches[j]);
-			sm.set(i, j, sval);
-		}
-	}
-	if (tm == 49)
-	{
-		for (int i = 0; i < sm.size(); ++i)
-		{
-			for (int j = 0; j < sm.size(); ++j)
+			float dval = differenceBranches(branches[i], branches[j], 5);
+			if (dval < thres)
 			{
-				printf("%3.3f ", sm.m.at<float>(i, j));
+				TK::merge(nodes[i], nodes[j]);
 			}
-			printf("\n");
 		}
 	}
-	for (int iter = 0; iter < 5; ++iter)
+	vector<TK::Node<CoreBranch*>*> reps = TK::clusters(nodes);
+	vector<vector<CoreBranch*>> mergedBranches(reps.size());
+	for (int i = 0; i < branches.size(); ++i)
 	{
-		bool bchanged = false;
-		while (true)
+		int k = distance(reps.begin(), find(reps.begin(), reps.end(), TK::findset(nodes[i])));
+		mergedBranches[k].push_back(branches[i]);
+	}
+	vector<CoreBranch*> result(reps.size());
+	for (int i = 0; i < mergedBranches.size(); ++i)
+	{
+		vector<TK::MovingDot*> vb;
+		for (int j = 0; j < mergedBranches[i].size(); ++j)
 		{
-			int row, col;
-			float maxval = sm.maxVal(row, col);
-			if (maxval > thres)
+			vb.insert(vb.end(), mergedBranches[i][j]->dots.begin(), mergedBranches[i][j]->dots.end());
+		}
+		result[i] = new CoreBranch(vb);
+		for (int j = 0; j < mergedBranches[i].size(); ++j)
+		{
+			CoreBranch* br = mergedBranches[i][j];
+			for (set<CoreBranch*>::iterator it = br->ascendants.begin(); it != br->ascendants.end(); ++it)
 			{
-				//printf("merging %d and %d\n", row, col);
-				vector<TK::MovingDot*> dots = branches[row]->dots;
-				dots.insert(dots.end(), branches[col]->dots.begin(), branches[col]->dots.end());
-				delete branches[row];
-				delete branches[col];
-				branches[row] = new CoreBranch(dots);
-				branches.erase(branches.begin() + col);
-				sm.remove(col);
-				bchanged = true;
+				result[i]->ascendants.insert(*it);
+				(*it)->decendants.insert(result[i]);
+				(*it)->decendants.erase(br);
+			}
+		}
+	}
+	for (int i = 0; i < result.size(); ++i)
+	{
+		result[i]->estimateVelocity();
+	}
 
-				for (int i = 0; i < sm.size(); ++i)
-				{
-					if (i != row)
-					{
-						float sval = branches[row]->similarityMeasure(branches[i]);
-						sm.set(row, i, sval);
-					}
-				}
-			}
-			else
-			{
-				break;
-			}
-		}
-		if (!bchanged) break;
-		thres *= rate;
-	}
-	if (tm == 49)
+	//clean up
+	for (int i = 0; i < branches.size(); ++i)
 	{
-		for (int i = 0; i < sm.size(); ++i)
-		{
-			for (int j = 0; j < sm.size(); ++j)
-			{
-				printf("%3.3f ", sm.m.at<float>(i, j));
-			}
-			printf("\n");
-		}
+		delete branches[i];
 	}
-	return branches;
-}*/
+	for (int i = 0; i < nodes.size(); ++i)
+	{
+		delete nodes[i];
+	}
 
-vector<CoreBranch*>
-mergeCoreBranches(vector<CoreBranch*> branches, float thres, float rate, int tm)
-{
-	for (int iter = 0; iter < 5; ++iter)
-	{
-		bool bchanged = false;
-		while (true)
-		{
-			float maxval = 0;
-			pair<CoreBranch*, CoreBranch*> pr(NULL, NULL);
-			int row, col;
-			for (int i = 0; i < branches.size(); ++i)
-			{
-				for (int j = 0; j < branches.size(); ++j)
-				{
-					if (i == j) continue;
-					float sval = branches[i]->similarityMeasure(branches[j]);
-					if (sval > maxval)
-					{
-						pr.first = branches[i];
-						pr.second = branches[j];
-						row = i;
-						col = j;
-						maxval = sval;
-					}
-				}
-			}
-			if (maxval > thres)
-			{
-				//printf("merging %d and %d\n", row, col);
-				vector<TK::MovingDot*> dots = pr.first->dots;
-				dots.insert(dots.end(), pr.second->dots.begin(), pr.second->dots.end());
-				delete branches[row];
-				delete branches[col];
-				branches[row] = new CoreBranch(dots);
-				branches.erase(branches.begin() + col);
-				bchanged = true;
-			}
-			else
-			{
-				break;
-			}
-		}
-		if (!bchanged) break;
-		thres *= rate;
-	}
-	if (tm == 49)
-	{
-		for (int i = 0; i < branches.size(); ++i)
-		{
-			for (int j = 0; j < branches.size(); ++j)
-			{
-				//float sval = (branches[i]->similarityMeasure(branches[j]) + branches[j]->similarityMeasure(branches[i])) / 2.0;
-				float sval = branches[i]->similarityMeasure(branches[j]);
-				printf("%3.3f ", sval);
-			}
-			printf("\n");
-		}
-	}
-	return branches;
+	return result;
 }
 
 int TK::MovingDot::_id = 0;
@@ -568,12 +546,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		ReadScalar(dist_thres, prhs[3], classMode);
 	}
 
-
-	if (bDisplay)
-	{
-		cv::namedWindow("input", CV_WINDOW_AUTOSIZE); //create a window called "MyVideo"
-	}
-
 	int end_frame = 0;
 	for (int i = 0; i < dims[0]; ++i)
 	{
@@ -582,15 +554,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	CoreParticleFactory& factory = CoreParticleFactory::getInstance();
 	vector<vector<CoreParticle*>> particles(end_frame+1);
+	vector<vector<TK::MovingDot*>> cores(end_frame + 1);
 	for (int i = 0; i < dims[0]; ++i)
 	{
 		float x = GetData2(P, i, 0, dims[0], dims[1], 0.0f);
 		float y = GetData2(P, i, 1, dims[0], dims[1], 0.0f);
 		float t = GetData2(P, i, 2, dims[0], dims[1], 0.0f);
+		CoreParticle* p = factory.makeParticle(x, y, 0, t);
 		particles[(int)t].push_back(factory.makeParticle(x, y, 0, t));
+		cores[(int)t].push_back(new TK::MovingDot(p));
 	}
 	
-	vector<vector<TK::MovingDot*>> cores;
 	vector<vector<CoreBranch*>> branches;
 	vector<TK::MovingDot*> dots;
 	cv::Size destSize(256, 256);
@@ -599,58 +573,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	float tscale = 1.0f; //temporal unit copmared to the pixel size.
 	cv::Mat prevFrame;
 	int npixels = dims[0] * dims[1];
-	int label = 0;
 
 	for(int frcount=0; frcount<particles.size(); ++frcount)
 	{
-		vector<TK::MovingDot*> cores0;
+		vector<TK::MovingDot*> cores0 = cores[frcount];
 		set<CoreParticle*> noncore;
-		map<CoreParticle*, TK::MovingDot*> pmap;
-		for (int i = 0; i < particles[frcount].size(); ++i)
-		{
-			TK::MovingDot* dot = new TK::MovingDot(particles[frcount][i]);
-			dot->t = particles[frcount][i]->t;
-			cores0.push_back(dot);
-			pmap[particles[frcount][i]] = dot;
-		}
 		dots.insert(dots.end(), cores0.begin(), cores0.end());
 		cores.push_back(cores0);
+
 		vector<CoreBranch*> branch0 = cutTrees(cores0, dist_thres);
-		if (!branches.empty())
-		{
-			estimateMotions(branch0, branches, est_thres, 2, dims);
-		}
-		int numbr = branch0.size();
-		map<TK::MovingDot*, TK::MovingDot*> idmap;
-		for (int i = 0; i < cores0.size(); ++i)
-		{
-			idmap[cores0[i]] = cores0[i]->match;
-		}
-		branch0 = mergeCoreBranches(branch0, merge_thres, 0.9, frcount);
-		for (int i = 0; i < cores0.size(); ++i)
-		{
-			if (idmap[cores0[i]] != cores0[i]->match)
-			{
-				printf("Inconsistent match: %d %d\n", frcount, cores0[i]->id);
-			}
-		}
-		//printf("%d: # branches = %d, after merge %d\n", frcount, numbr, branch0.size());
-		for (int i = 0; i < branch0.size(); ++i)
-		{
-			branch0[i]->label = lval++;
-		}
+		branch0 = establishCorresponedence(branch0, branches, dist_thres);
+		branch0 = mergeBranches(branch0, merge_thres);
+		branch0 = establishCorresponedence(branch0, branches, dist_thres);
+		//branch0 = mergeBranches(branch0, merge_thres);
+		//branch0 = establishCorresponedence(branch0, branches, dist_thres);
 		branches.push_back(branch0);
-		if (bDisplay)
-		{
-			cv::Mat M = cv::Mat::zeros(destSize, cv::DataType<int>::type); //blank frame
-			drawMovingDots(M, cores0);
-			if (cv::waitKey(sleepTime) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
-			{
-				cout << "esc key is pressed by user" << endl;
-				break;
-			}
-		}
-		//if(frcount == 2) break;
 	}
 
 	cv::destroyAllWindows(); 
@@ -712,7 +649,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				SetData2(F, m, 4, dimsF[0], dimsF[1], (float)br->dots.size());
 				SetData2(F, m, 5, dimsF[0], dimsF[1], (float)br->decendants.size());
 				SetData2(F, m, 6, dimsF[0], dimsF[1], (float)br->id + 1);
-				SetData2(F, m, 7, dimsF[0], dimsF[1], (float)(br->ascendant ? br->ascendant->id + 1 : 0));
+				SetData2(F, m, 7, dimsF[0], dimsF[1], (float)(br->ascendants.size()));
 				SetData2(F, m, 8, dimsF[0], dimsF[1], (float)i);
 			}
 		}

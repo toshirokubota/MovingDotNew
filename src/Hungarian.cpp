@@ -6,14 +6,14 @@ This version of Hungarian algorithm is by Andrei Lopatin. See http://e-maxx.ru/a
 */
 float Hungarian::solve(bool bMaximize) {
 	float INF = std::numeric_limits<float>::infinity();
-	int n = nJobs;
-	int m = nWorkers;
+	int m = nJobs;
+	int n = nWorkers;
 	//store the cost matrix as 1 based index.
 	vector<vector<float>> a(m + 1);
 	a[0] = vector<float>(n + 1, 0);
 	for (int i = 1; i <= m; ++i)
 	{
-		vector<float> a0(m + 1, 0);
+		vector<float> a0(n + 1, 0);
 		for (int j = 1; j <= n; ++j)
 		{
 			a0[j] = C[(i - 1)* n + j - 1];
@@ -40,21 +40,26 @@ float Hungarian::solve(bool bMaximize) {
 			float delta = INF;
 			int j1;
 			for (int j = 1; j <= m; ++j)
-			if (!used[j]) {
-				float cur = a[i0][j] - u[i0] - v[j];
-				if (cur < minv[j])
-					minv[j] = cur, way[j] = j0;
-				if (minv[j] < delta)
+			{
+				if (!used[j]) 
 				{
-					delta = minv[j], j1 = j;
-					//printf("delta = %f\n", delta);
+					float cur = a[i0][j] - u[i0] - v[j];
+					if (cur < minv[j])
+						minv[j] = cur, way[j] = j0;
+					if (minv[j] < delta)
+					{
+						delta = minv[j], j1 = j;
+						//printf("delta = %f\n", delta);
+					}
 				}
 			}
 			for (int j = 0; j <= m; ++j)
-			if (used[j])
-				u[p[j]] += delta, v[j] -= delta;
-			else
-				minv[j] -= delta;
+			{
+				if (used[j])
+					u[p[j]] += delta, v[j] -= delta;
+				else
+					minv[j] -= delta;
+			}
 			j0 = j1;
 		} while (p[j0] != 0);
 		do {

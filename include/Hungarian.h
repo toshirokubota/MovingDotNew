@@ -26,7 +26,7 @@ struct Hungarian {
 	}
 	float getCost(int i, int j) const
 	{
-		return C[i*nJobs + j];
+		return C[j*nWorkers + i];
 	}
 	int nJobs;
 	int nWorkers;
