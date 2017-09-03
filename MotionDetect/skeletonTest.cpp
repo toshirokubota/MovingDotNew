@@ -179,9 +179,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		return;
 	}
 	int thres = 30;
-	int blockSize = 5;
+	int sleepTime = 30;
 	int minSize = 3;
 	bool bDisplay = false;
+	float srate = 1.0f; //subsample rate
 	if (nrhs >= 2)
 	{
 		mxClassID classMode;
@@ -190,7 +191,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (nrhs >= 3)
 	{
 		mxClassID classMode;
-		ReadScalar(blockSize, prhs[2], classMode);
+		ReadScalar(sleepTime, prhs[2], classMode);
 	}
 	if (nrhs >= 4)
 	{
@@ -203,6 +204,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mxClassID classMode;
 		ReadScalar(val, prhs[4], classMode);
 		bDisplay = val == 0 ? false : true;
+	}
+	if (nrhs >= 6)
+	{
+		mxClassID classMode;
+		ReadScalar(srate, prhs[5], classMode);
 	}
 
 	double dWidth = cap.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
@@ -221,10 +227,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	cv::Mat frame; //after resizing frame
 	cv::Mat frame0; //original frame
-	cv::Size destSize(dWidth, dHeight);
+	cv::Size destSize(dWidth/srate, dHeight/srate);
 	cv::Mat prevFrame = cv::Mat::zeros(destSize, cv::DataType<uchar>::type); //previous frame
 	int frameCount = 0;
 	vector<cv::Mat> detected;
+	vector<vector<int>> points;
 	while (true)
 	{
 		bool bSuccess = cap.read(frame0); // read a new frame from video
@@ -259,9 +266,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			for (int j = 0; j < fg.cols; ++j)
 			{
 				int lb = label.at<int>(i, j);
-				if (lb > 0 && stats.at<int>(lb, 4) < minSize)
+				if (lb > 0)
 				{
-					ptr[j] = 0;
+					if (stats.at<int>(lb, 4) < minSize)
+					{
+						ptr[j] = 0;
+					}
+					else
+					{
+						vector<int> vp(3);
+						vp[0] = j; vp[1] = i; vp[2] = frameCount;
+						points.push_back(vp);
+					}
 				}
 			}
 		}
@@ -272,9 +288,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		{
 			imshow("input", frame); //show the frame in "MyVideo" window
 			imshow("motion", fg);
-			imshow("Skeleton", skel);
+			imshow("skeleton", skel);
 		}
-		if (cv::waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
+		if (cv::waitKey(sleepTime) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
 		{
 			cout << "esc key is pressed by user" << endl;
 			break;
@@ -283,6 +299,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	cap.release();
 
 	if (nlhs >= 1)
+	{
+		const int dims[] = { points.size(), 3 };
+		vector<int> F(dims[0] * dims[1]);
+		for (int i = 0; i < points.size(); ++i)
+		{
+			SetData2(F, i, 0, dims[0], dims[1], points[i][0]);
+			SetData2(F, i, 1, dims[0], dims[1], points[i][1]);
+			SetData2(F, i, 2, dims[0], dims[1], points[i][2]);
+		}
+		plhs[0] = StoreData(F, mxINT32_CLASS, 2, dims);
+	}
+	if (nlhs >= 2)
 	{
 		const int dims[] = { frame.cols, frame.rows, detected.size() };
 		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
@@ -297,7 +325,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				}
 			}
 		}
-		plhs[0] = StoreData(F, mxUINT8_CLASS, 3, dims);
+		plhs[1] = StoreData(F, mxUINT8_CLASS, 3, dims);
 	}
 
 	cv::destroyAllWindows();

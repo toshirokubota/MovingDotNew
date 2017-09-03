@@ -1,0 +1,11 @@
+MovingDotGrouping2D.cpp
+Attempt to segment moving dots in 2D using region-filling dot grouping idea.
+
+MovingDotGrouping3D.cpp
+Applicable to both 2D and 3D data.
+
+MovingDotGroupPartition.cpp
+A new approach to first group moving dots through region-filling until all dots are merged.
+Then partition will breaks into multiple regions based on convexity-type cireteria.
+
+

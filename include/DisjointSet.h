@@ -55,6 +55,25 @@ namespace TK
 		}
 	}
 
+	/*
+	Merge the two -- let the first node being the representative.
+	*/
+	template<class T>
+	Node<T>* mergeFirst(Node<T>* p, Node<T>* q)
+	{
+		Node<T>* rp = findset(p);
+		Node<T>* rq = findset(q);
+		if (rp == rq)
+		{
+			return rp;
+		}
+		else
+		{
+			rq->parent = rp; // ->parent;
+			return rp;
+		}
+	}
+
 	template<class T>
 	Node<T>*
 		findset(Node<T>* p)

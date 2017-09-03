@@ -28,10 +28,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	int len = mxGetString(prhs[0], ch, 256);
 	cap.open(ch);
 	double decRate = 1.0;
+	int sleepTime = 30;
 	if (nrhs >= 2)
 	{
 		mxClassID classMode;
 		ReadScalar(decRate, prhs[1], classMode);
+	}
+	if (nrhs >= 3)
+	{
+		mxClassID classMode;
+		ReadScalar(sleepTime, prhs[2], classMode);
 	}
 
 	//cap.open(0); //open a local camera (web-cam)
@@ -68,7 +74,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 		cv::imshow("input", gray); //show the frame in "MyVideo" window
 		frames.push_back(gray);
-		if (cv::waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
+		if (cv::waitKey(sleepTime) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
 		{
 			cout << "esc key is pressed by user" << endl;
 			break;
