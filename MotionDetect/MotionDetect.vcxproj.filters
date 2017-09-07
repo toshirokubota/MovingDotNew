@@ -36,6 +36,15 @@
     <ClInclude Include="..\include\DisjointSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Canny.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\CannyStruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\MovingEdgeDetector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -65,7 +74,13 @@
     <ClCompile Include="..\src\szMiscOperations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="skeletonTest.cpp">
+    <ClCompile Include="..\src\CannyStruct.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MovingEdgeDetector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="movingEdgeDetectionTester.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

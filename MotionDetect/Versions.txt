@@ -14,5 +14,7 @@ Incremental construction of minimum spanning tree as frames come in sequentially
 skeletonTest.cpp
 Testing skeletonization code taken from http://felix.abecassis.me/2011/09/opencv-morphological-skeleton/.
 
+cannyTest.cpp
+Use Canny edge detection and collect edges that have changed.
 
 

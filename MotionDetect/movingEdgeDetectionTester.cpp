@@ -22,6 +22,7 @@
 #include <CoreParticleMakeGraph.h>
 #include <szConnectedComponentC.h>
 #include <MovingDot.h>
+#include <MovingEdgeDetector.h>
 //using namespace cv;
 using namespace std;
 
@@ -62,11 +63,13 @@ MAT2StdVector(vector<T>& F, cv::Mat& m, int& ndim, int dims[])
 }
 
 template<class T>
-void
-StdVector2Mat(vector<T>& F, cv::Mat& m, int ndim, const int* dims)
+cv::Mat
+StdVector2Mat(vector<T>& F, int ndim, const int* dims)
 {
 	//m.resize(dims[0] * dims[1]);
 	//m.reshape(dims[0], dims[1]);
+	cv::Size destSize(dims[0], dims[1]);
+	cv::Mat m = cv::Mat::zeros(destSize, cv::DataType<T>::type);
 	if (m.type() == CV_8U)
 	{
 		for (int i = 0; i < F.size(); ++i)
@@ -91,6 +94,7 @@ StdVector2Mat(vector<T>& F, cv::Mat& m, int ndim, const int* dims)
 	else {
 		//un-supported format...
 	}
+	return m;
 }
 
 /*
@@ -160,6 +164,23 @@ drawMovingDots(cv::Mat& M,
 	}
 }
 
+/*
+Update PREV by incorporating a new image in CUR.
+*/
+void
+temporalSmoothing(cv::Mat& prev, cv::Mat cur)
+{
+	for (int i = 0; i < cur.rows; ++i)
+	{
+		unsigned char* ptr = cur.ptr<unsigned char>(i);
+		unsigned char* ptr2 = prev.ptr<unsigned char>(i);
+		for (int j = 0; j < cur.cols; ++j)
+		{
+			ptr2[j] = ptr2[j] / 2 + ptr[j] / 2;
+		}
+	}
+}
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	if (nrhs < 1 || nlhs < 1)
@@ -178,20 +199,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mexErrMsgTxt("Cannot open the video.");
 		return;
 	}
-	int thres = 30;
+	int low = 30;
+	int high = 150;
 	int sleepTime = 30;
-	int minSize = 3;
-	bool bDisplay = false;
+	int minSize = 5;
+	bool bDisplay = true;
 	float srate = 1.0f; //subsample rate
 	if (nrhs >= 2)
 	{
 		mxClassID classMode;
-		ReadScalar(thres, prhs[1], classMode);
+		ReadScalar(low, prhs[1], classMode);
 	}
 	if (nrhs >= 3)
 	{
 		mxClassID classMode;
-		ReadScalar(sleepTime, prhs[2], classMode);
+		ReadScalar(high, prhs[2], classMode);
 	}
 	if (nrhs >= 4)
 	{
@@ -200,15 +222,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nrhs >= 5)
 	{
-		unsigned int val;
 		mxClassID classMode;
-		ReadScalar(val, prhs[4], classMode);
-		bDisplay = val == 0 ? false : true;
+		ReadScalar(srate, prhs[4], classMode);
 	}
 	if (nrhs >= 6)
 	{
 		mxClassID classMode;
-		ReadScalar(srate, prhs[5], classMode);
+		ReadScalar(sleepTime, prhs[5], classMode);
 	}
 
 	double dWidth = cap.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
@@ -222,21 +242,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	{
 		cv::namedWindow("input", CV_WINDOW_AUTOSIZE); //create a window called "MyVideo"
 		cv::namedWindow("motion", CV_WINDOW_AUTOSIZE);
-		cv::namedWindow("skeleton", CV_WINDOW_AUTOSIZE);
 		cv::namedWindow("edge", CV_WINDOW_AUTOSIZE);
 	}
 
-	cv::Mat frame; //after resizing frame
-	cv::Mat frame0; //original frame
 	cv::Size destSize(dWidth/srate, dHeight/srate);
-	cv::Mat prevFrame = cv::Mat::zeros(destSize, cv::DataType<uchar>::type); //previous frame
+	cv::Mat smoothFrame; // = cv::Mat::zeros(destSize, cv::DataType<uchar>::type); //previous frame
+
+	TK::MovingEdgeDetector detector(0.5, 0.7, 0.4, 5);
+
 	int frameCount = 0;
 	vector<cv::Mat> frames;
-	vector<cv::Mat> detected;
+	vector<cv::Mat> labels;
 	vector<cv::Mat> edges;
 	vector<vector<int>> points;
 	while (true)
 	{
+		cv::Mat frame0; //original frame
 		bool bSuccess = cap.read(frame0); // read a new frame from video
 		frameCount++;
 
@@ -245,76 +266,36 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			cout << "Cannot read a frame from video stream" << endl;
 			break;
 		}
+		cv::Mat frame; //after resizing frame
 		resize(frame0, frame, destSize);
 
 		cv::Mat gray;
 		cv::cvtColor(frame, gray, CV_BGR2GRAY);
 
+		//cv::Mat edge = cv::Mat::zeros(destSize, cv::DataType<unsigned char>::type); //blank frame
+		int dims[] = { destSize.width, destSize.height };
+		int ndim;
+		vector<float> fim;
+		MAT2StdVector(fim, gray, ndim, dims);
+		detector.run(fim, ndim, dims);
+		//cv::Canny(smoothFrame, edge, low, high); // , 7, true);
+		vector<unsigned char> _edge = detector.retrieveEdges();
+		cv::Mat edge = StdVector2Mat(_edge, ndim, dims);
+
 		if (frameCount <= 1)
 		{
-			prevFrame = gray;
 			continue; //skip the first frame since there is no previous frame, yet
 		}
-
-		cv::Mat diff = gray - prevFrame;
-		prevFrame = gray;
-		cv::Mat fg; // = cv::Mat::zeros(destSize, cv::DataType<unsigned char>::type); //blank frame
-		cv::threshold(cv::abs(diff), fg, (double)thres, 255.0, 0);
-		cv::Mat edge; // = cv::Mat::zeros(destSize, cv::DataType<unsigned char>::type); //blank frame
-		cv::Canny(gray, edge, 100, 200);
-		cv::Mat label, stats, centroids;
-		int nc = connectedComponentsWithStats(fg, label, stats, centroids);
-		for (int i = 0; i < fg.rows; ++i)
-		{
-			unsigned char* ptr = fg.ptr<unsigned char>(i);
-			for (int j = 0; j < fg.cols; ++j)
-			{
-				int lb = label.at<int>(i, j);
-				if (lb > 0)
-				{
-					if (stats.at<int>(lb, 4) < minSize)
-					{
-						ptr[j] = 0;
-					}
-					else
-					{
-						vector<int> vp(3);
-						vp[0] = j; vp[1] = i; vp[2] = frameCount;
-						points.push_back(vp);
-					}
-				}
-			}
-		}
-		int hw = 4;
-		for (int i = hw; i < edge.rows - hw; ++i)
-		{
-			unsigned char* ptr2 = edge.ptr<unsigned char>(i);
-			for (int j = hw; j < edge.cols - hw; ++j)
-			{
-				if (ptr2[j])
-				{
-					cv::Mat tmp = fg(cv::Rect(j - hw, i - hw, 2 * hw + 1, 2 * hw + 1));
-					if (cv::countNonZero(tmp) == 0)
-					{
-						ptr2[j] = 64;
-					}
-					else
-					{
-						ptr2[j] = 255;
-					}
-				}
-			}
-		}
-		cv::Mat skel = skeleton(fg.clone());
-		detected.push_back(skel);
-		frames.push_back(gray);
-		edges.push_back(edge);
+		/*printf("%d edge retained out of %d.\n",
+			detector.edges.size(),
+			detector.edgeDetector[(detector.next + 1) % 2].edges.size());*/
+		vector<unsigned char> _dif = detector.retrieveMovingEdges();
+		cv::Mat dif = StdVector2Mat(_dif, ndim, dims);
 
 		if (bDisplay)
 		{
 			imshow("input", gray); //show the frame in "MyVideo" window
-			imshow("motion", fg);
-			imshow("skeleton", skel);
+			imshow("motion", dif);
 			imshow("edge", edge);
 		}
 		if (cv::waitKey(sleepTime) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
@@ -339,14 +320,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 2)
 	{
-		const int dims[] = { frame.cols, frame.rows, detected.size() };
-		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
-		for (int i = 0; i < detected.size(); ++i)
+		const int dims[] = { (int)destSize.width, (int)destSize.height, labels.size() };
+		vector<int> F(dims[0] * dims[1] * dims[2], 0);
+		for (int i = 0; i < dims[2]; ++i)
 		{
-			for (int j = 0; j < frame.rows; ++j)
+			for (int j = 0; j < dims[1]; ++j)
 			{
-				unsigned char* ptr = detected[i].ptr(j);
-				for (int k = 0; k < frame.cols; ++k)
+				int* ptr = labels[i].ptr<int>(j);
+				for (int k = 0; k < dims[0]; ++k)
 				{
 					SetData3(F, k, j, i, dims[0], dims[1], dims[2], ptr[k]);
 				}
@@ -356,14 +337,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 3)
 	{
-		const int dims[] = { frame.cols, frame.rows, frames.size() };
+		const int dims[] = { (int)destSize.width, (int)destSize.height, frames.size() };
 		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
-		for (int i = 0; i < frames.size(); ++i)
+		for (int i = 0; i < dims[2]; ++i)
 		{
-			for (int j = 0; j < frame.rows; ++j)
+			for (int j = 0; j < dims[1]; ++j)
 			{
 				unsigned char* ptr = frames[i].ptr(j);
-				for (int k = 0; k < frame.cols; ++k)
+				for (int k = 0; k < dims[0]; ++k)
 				{
 					SetData3(F, k, j, i, dims[0], dims[1], dims[2], ptr[k]);
 				}
@@ -373,14 +354,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 4)
 	{
-		const int dims[] = { frame.cols, frame.rows, edges.size() };
+		const int dims[] = { (int)destSize.width, (int)destSize.height, edges.size() };
 		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
-		for (int i = 0; i < edges.size(); ++i)
+		for (int i = 0; i < dims[2]; ++i)
 		{
-			for (int j = 0; j < frame.rows; ++j)
+			for (int j = 0; j < dims[1]; ++j)
 			{
 				unsigned char* ptr = edges[i].ptr(j);
-				for (int k = 0; k < frame.cols; ++k)
+				for (int k = 0; k < dims[0]; ++k)
 				{
 					SetData3(F, k, j, i, dims[0], dims[1], dims[2], ptr[k]);
 				}

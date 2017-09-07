@@ -167,23 +167,28 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Canny.h" />
+    <ClInclude Include="..\include\CannyStruct.h" />
     <ClInclude Include="..\include\CoreParticle.h" />
     <ClInclude Include="..\include\CoreParticleMakeGraph.h" />
     <ClInclude Include="..\include\DisjointSet.h" />
     <ClInclude Include="..\include\MovingDot.h" />
+    <ClInclude Include="..\include\MovingEdgeDetector.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\CannyStruct.cpp" />
     <ClCompile Include="..\src\CoreParticleMakeGraph.cpp" />
     <ClCompile Include="..\src\CoreParticleUtility.cpp" />
+    <ClCompile Include="..\src\MovingEdgeDetector.cpp" />
     <ClCompile Include="..\src\NeighborhoodFactory.cpp" />
     <ClCompile Include="..\src\szDistanceTransform.cpp" />
     <ClCompile Include="..\src\szDistanceTransformNonIsotropic.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
     <ClCompile Include="..\src\szMyNeighborOp.cpp" />
-    <ClCompile Include="skeletonTest.cpp" />
+    <ClCompile Include="movingEdgeDetectionTester.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

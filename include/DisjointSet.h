@@ -106,6 +106,26 @@ namespace TK
 		return unique;
 	}
 
+	template<class T>
+	std::vector<vector<Node<T>*>>
+		grouping(const std::vector<Node<T>*>& vnodes)
+	{
+		std::vector<Node<T>*> reps = clusters(vnodes);
+		map<Node<T>*, int> imap;
+		for (int i = 0; i < reps.size(); ++i)
+		{
+			imap[reps[i]] = i;
+		}
+		std::vector<vector<Node<T>*>> groups(reps.size());
+		for (int i = 0; i < vnodes.size(); ++i)
+		{
+			Node<T>* r = findset(vnodes[i]);
+			int k = imap[r];
+			groups[k].push_back(vnodes[i]);
+		}
+		return groups;
+	}
+
 #include <cassert>
 	template<class T>
 	bool
