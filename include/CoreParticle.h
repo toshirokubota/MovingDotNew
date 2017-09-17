@@ -35,6 +35,7 @@ struct CoreParticle
 	float saliency; //new addition 08/09/2017
 	int core;
 
+	set<CoreParticle*> sources;
 	set<CoreParticle*> ascendents;
 	set<CoreParticle*> descendents;
 	vector<CoreParticle*> neighbors;
@@ -91,6 +92,7 @@ private:
 	~CoreParticleFactory()
 	{
 		clean();
+		_id = 0;
 	}
 	CoreParticleFactory(CoreParticleFactory& f) {}
 	CoreParticleFactory operator=(CoreParticleFactory& f) {}

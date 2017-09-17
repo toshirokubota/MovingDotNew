@@ -8,4 +8,11 @@ MovingDotGroupPartition.cpp
 A new approach to first group moving dots through region-filling until all dots are merged.
 Then partition will breaks into multiple regions based on convexity-type cireteria.
 
+%MovingDotGroupMST.cpp - I never completed this one. It got too complicated...
+%An Minnimum spanning tree is constructed from input dots. Then, the growth continues, as cycles are formed.
+%For each cycle, check for the path length (and other saliency measures). The growth stops when a group with 
+%sufficient saliency is found or the maximum number of iteration is reached.
 
+MovingDotGroupPartitionV2.cpp
+It applies region-filling. For every iteration, it checks for core particles and derive the region converged into the core.
+If the region is large enough, then records it.

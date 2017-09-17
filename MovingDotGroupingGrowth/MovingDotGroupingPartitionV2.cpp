@@ -25,78 +25,44 @@
 #include <CoreParticleUtility.h>
 #include <NeighborhoodFactory.h>
 #include <CoreParticleMakeGraph.h>
-
+#include <szConvexHull2D.h>
 //using namespace cv;
 using namespace std;
 
-struct DotComponent
+struct RegionInfo
 {
-	static int _id;
-	DotComponent()
+	RegionInfo(vector<CoreParticle*>& pnts, float m, int g, int n)
 	{
-		id = _id++;
+		contour = pnts;
+		measure = m;
+		gen = g;
+		size = n;
 	}
-	DotComponent(vector<CoreParticle*> dots) : DotComponent()
-	{
-		this->dots = dots;
-	}
-	vector<CoreParticle*> dots;
-	int id;
-};
-int DotComponent::_id = 0;
-
-struct DotComponentPair
-{
-	DotComponentPair(DotComponent* a, DotComponent* b, int gen)
-	{
-		this->a = a;
-		this->b = b;
-		this->gen = gen;
-		this->merged = NULL;
-		value = 0.0f;
-	}
-	DotComponent* a;
-	DotComponent* b;
-	DotComponent* merged;
-	int gen; //generation where the merge happened.
-	float value; 
+	vector<CoreParticle*> contour;
+	float measure;
+	int gen;
+	int size;
 };
 
-vector<DotComponent*>
-initialComponents(
-	vector<CoreParticle*>& mp,
-	vector<CoreParticle*>& dots,
-	bool bEightNeighorhood,
-	int ndim, const int* dims)
+/*float
+shapeMeasure(set<CoreParticle*>& particles)
 {
-	vector<int> S(numberOfElements(ndim, dims));
-	for (int i = 0; i < mp.size(); ++i)
+	vector<CParticleF> pnts;
+	for (set<CoreParticle*>::iterator it = particles.begin(); it != particles.end(); ++it)
 	{
-		if (mp[i]) S[i] = 1;
+		CoreParticle* p = *it;
+		pnts.push_back(CParticleF(p->x, p->y));
 	}
-	vector<int> C(S.size());
-	int nc;
-	if (bEightNeighorhood)
-	{
-		nc = ConnectedComponentAnalysisBigger(C, S, NeighborhoodEight, 0, ndim, dims);
-	}
-	else
-	{
-		nc = ConnectedComponentAnalysisBigger(C, S, NeighborhoodFour, 0, ndim, dims);
-	}
-	vector<DotComponent*> comps(nc);
-	for (int n = 0; n < nc; ++n)
-	{
-		comps[n] = new DotComponent();
-	}
-	for (int i = 0; i < dots.size(); ++i)
-	{
-		int val = GetVoxel(C, dots[i], 0, ndim, dims);
-		comps[val - 1]->dots.push_back(dots[i]);
-	}
-	return comps;
+	vector<CParticleF> hull = ConvexHull2D(pnts);
+	float area = polygonArea(hull);
+	return pnts.size() / area;
+}*/
+
+float
+shapeMeasure2(vector<CoreParticle*>& boundary, set<CoreParticle*>& region)
+{
+	return sqrt(2.0*PI*(float)region.size()) / (float)boundary.size();
 }
-
 
 /*
 This routine grows regions from a set of dots (in DOTS) for a fixed number of iterations.
@@ -104,10 +70,11 @@ MP gives the spatial arrangement of particles.
 
 The routine also establish a hierarchical structure as initial dot (connected) components are merged.
 */
-set<CoreParticle*>
+vector<RegionInfo>
 grow(vector<int>& S,
 	vector<CoreParticle*>& mp,
 	set<CoreParticle*>& particles,
+	float thres,
 	int niter,
 	bool bEightNeighorhood,
 	int ndim, const int* dims)
@@ -120,6 +87,7 @@ grow(vector<int>& S,
 	{
 		nbh = nbh8;
 	}
+
 	set<CoreParticle*> front;
 	front.insert(particles.begin(), particles.end());
 	for (set<CoreParticle*>::iterator it = front.begin(); it != front.end(); ++it)
@@ -127,8 +95,12 @@ grow(vector<int>& S,
 		CoreParticle* p = *it;
 		p->gen = 0;
 		p->src = p;
+		TK::Node<CoreParticle*>* n = TK::makeset(p);
 	}
-
+	vector<int> L0;
+	vector<RegionInfo> regions;
+	vector<RegionInfo> saved;
+	int nc0 = 0;
 	int iter = 1;
 	while (!front.empty() && iter <= niter)
 	{
@@ -139,6 +111,88 @@ grow(vector<int>& S,
 			CoreParticle* p = *it;
 			SetVoxel(S, p, iter, ndim, dims);
 			p->gen = iter;
+		}
+		vector<int> L(numberOfElements(ndim, dims), 0);
+		int nc = ConnectedComponentAnalysisBigger(L, S, NeighborhoodEight, 0, ndim, dims);
+		vector<RegionInfo> regions0 = regions;
+		regions = vector<RegionInfo>();
+		for (int k = 1; k <= nc; ++k)
+		{
+			set<CoreParticle*> sp;
+			vector<CoreParticle*> vp;
+			for (int m = 0; m < L.size(); ++m)
+			{
+				if (L[m] == k)
+				{
+					//if (mp[m]->gen == 1)
+					{
+						sp.insert(mp[m]);
+					}
+					if (mp[m]->gen == iter)
+					{
+						vp.push_back(mp[m]);
+					}
+				}
+			}
+			regions.push_back(RegionInfo(vp, shapeMeasure2(vp,sp), iter, sp.size()));
+		}
+
+		if (nc != nc0)
+		{
+			//check which regions have been merged.
+			for (int i = 0; i < regions0.size(); ++i)
+			{
+				int label1 = GetVoxel(L, *(regions0[i].contour.begin()), 0, ndim, dims);
+				for (int j = 0; j < regions0.size(); ++j)
+				{
+					if (i == j) continue;
+					int label2 = GetVoxel(L, *(regions0[j].contour.begin()), 0, ndim, dims);
+					if (label1 == label2)
+					{
+						printf("Merge %d %d: %d,%d,%f  => %d,%d,%f, %c\n",
+							iter, i,
+							regions0[i].size, regions0[i].contour.size(), regions0[i].measure,
+							regions[label1 - 1].size, regions[label1 - 1].contour.size(), 
+							regions[label1 - 1].measure,
+							regions0[i].measure>regions[label1-1].measure ? '*' : 'x');
+						if (regions0[i].measure > thres && 
+							regions0[i].measure > regions[label1 - 1].measure)
+						{
+							saved.push_back(regions0[i]);
+						}
+						break;
+					}
+				}
+			}
+			/*
+			//compare the measure.
+			for (int i = 0; i < pairs.size(); ++i)
+			{
+				float m1 = regions0[pairs[i].first].measure;
+				float m2 = regions0[pairs[i].second].measure;
+				int label = GetVoxel(L, *(regions0[pairs[i].first].contour.begin()), 0, ndim, dims);
+				float m3 = regions[label - 1].measure;
+				printf("Merge %d %d: %d + %d => %d, %f * %f => %f, %c, %c\n",
+					iter, i,
+					regions0[pairs[i].first].contour.size(),
+					regions0[pairs[i].second].contour.size(),
+					regions[label - 1].contour.size(), 
+					m1, m2, m3,
+					m1*m2>m3*m3 && m1 > thres ? '*': 'x',
+					m1*m2>m3*m3 && m2 > thres ? '*': 'x');
+				if (m1*m2 > m3*m3)
+				{
+					//saved.push_back(regions[label - 1]);
+					if (m1 > thres)
+					{
+						saved.push_back(regions0[pairs[i].first]);
+					}
+					if (m2 > thres)
+					{
+						saved.push_back(regions0[pairs[i].second]);
+					}
+				}
+			}*/
 		}
 
 		for (set<CoreParticle*>::iterator it = front.begin(); it != front.end(); ++it)
@@ -172,10 +226,16 @@ grow(vector<int>& S,
 				}
 			}
 		}
+		for (set<CoreParticle*>::iterator it = front.begin(); it != front.end(); ++it)
+		{
+			CoreParticle* p = *it;
+			strongMedialParticle(p, ndim, dims);
+		}
 		front = next;
 		iter++;
+		nc0 = nc;
 	}
-	return particles;
+	return saved;
 }
 
 /*
@@ -290,6 +350,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mxClassID classMode;
 		ReadScalar(numIter, prhs[2], classMode);
 	}
+	float thres =  0.5;
+	if (nrhs >= 4)
+	{
+		mxClassID classMode;
+		ReadScalar(thres, prhs[3], classMode);
+	}
 	int nvoxels = numberOfElements(ndim, dims);
 
 	vector<CoreParticle*> mp = generateParticleMap(im, ndim, dims);
@@ -298,14 +364,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	{
 		if (mp[i]) dots.insert(mp[i]);
 	}
+	vector<CoreParticle*> dotsv = setupParticleNeighbors(mp, ndim, dims);
 	vector<int> S(nvoxels, 0);
-	//vector<DotComponent*> comps = initialComponents(mp, dots, bEightNeighborhood, ndim, dims);
-	printf("There are %d particles before growth.\n", dots.size());
-	dots = grow(S, mp, dots, numIter, bEightNeighborhood, ndim, dims);
-	printf("There are %d particles after growth.\n", dots.size());
-	vector<CoreParticle*> particles = setupParticleNeighbors(mp, ndim, dims);
+	vector<RegionInfo> regions = grow(S, mp, dots, thres, numIter, bEightNeighborhood, ndim, dims);
 	vector<int> S2(nvoxels, 0);
-	partitionParticles(dots, S2, numIter, bEightNeighborhood, ndim, dims);
+	//partitionParticles(dots, S2, numIter, bEightNeighborhood, ndim, dims);
 
 	if (nlhs >= 1)
 	{
@@ -315,7 +378,28 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	{
 		plhs[1] = StoreData(S2, mxINT32_CLASS, ndim, dims);
 	}
-	
+	if (nlhs >= 3)
+	{
+		const int dims[] = { regions.size(), 1 };
+		vector<vector<int>> F; // (dims[0] * dims[1]);
+		int ncol = 4;
+		for(int i=0; i<regions.size(); ++i)
+		{
+			const int dims2[] = { regions[i].contour.size(), ncol };
+			vector<int> f(dims2[0] * dims2[1]);
+			for (int j = 0; j < regions[i].contour.size(); ++j)
+			{
+				CoreParticle* p = regions[i].contour[j];
+				SetData2(f, j, 0, dims2[0], dims2[1], p->x);
+				SetData2(f, j, 1, dims2[0], dims2[1], p->y);
+				SetData2(f, j, 2, dims2[0], dims2[1], regions[i].gen);
+				SetData2(f, j, 3, dims2[0], dims2[1], (int)(regions[i].measure*1000.0));
+			}
+			F.push_back(f);
+		}
+		plhs[2] = StoreDataCell(F, mxINT32_CLASS, ndim, dims, ncol);
+	}
+
 	/*if (nlhs >= 2)
 	{
 		vector<unsigned char> C(S.size(), 0);

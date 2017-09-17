@@ -67,15 +67,41 @@ selectNeighbors(CoreParticle*p, int gen, bool bEight = true)
 }
 
 vector<CoreParticle*>
-closestDescendents(CoreParticle* p)
+closestDescendents(CoreParticle* p, bool bEightNeighbor)
 {
-	vector<CoreParticle*> vn = selectNeighbors(p, p->gen + 1);
+	vector<CoreParticle*> vn = selectNeighbors(p, p->gen + 1, bEightNeighbor);
 	vector<CoreParticle*> vq;
 	float mind = std::numeric_limits<float>::infinity();
 	for (int i = 0; i < vn.size(); ++i)
 	{
 		CoreParticle* q = vn[i];
-		if (q->gen == p->gen && q->id < p->id) continue;
+		//if (q->gen == p->gen && q->id < p->id) continue;
+
+		float d = length(p->x - q->x, p->y - q->y, p->z - q->z, p->t - q->t);
+		if (d < mind)
+		{
+			mind = d;
+			vq.clear();
+			vq.push_back(q);
+		}
+		else if (Abs(d - mind) < 0.001f)
+		{
+			vq.push_back(q);
+		}
+	}
+	return vq;
+}
+
+vector<CoreParticle*>
+closestAscendents(CoreParticle* p, bool bEightNeighbor)
+{
+	vector<CoreParticle*> vn = selectNeighbors(p, p->gen - 1, bEightNeighbor);
+	vector<CoreParticle*> vq;
+	float mind = std::numeric_limits<float>::infinity();
+	for (int i = 0; i < vn.size(); ++i)
+	{
+		CoreParticle* q = vn[i];
+		//if (q->gen == p->gen && q->id < p->id) continue;
 
 		float d = length(p->x - q->x, p->y - q->y, p->z - q->z, p->t - q->t);
 		if (d < mind)

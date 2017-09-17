@@ -7,6 +7,12 @@ vector<float>
 centroid(vector<CoreParticle*>& vp);
 
 vector<CoreParticle*>
+closestDescendents(CoreParticle* p, bool bEightNeighbor = true);
+
+vector<CoreParticle*>
+closestAscendents(CoreParticle* p, bool bEightNeighbor = true);
+
+vector<CoreParticle*>
 propagateParticles(
 	vector<CoreParticle*>& particles,
 	vector<CoreParticle*>& mp,

@@ -199,36 +199,42 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mexErrMsgTxt("Cannot open the video.");
 		return;
 	}
-	int low = 30;
-	int high = 150;
-	int sleepTime = 30;
+	float threshold = 0.5;
+	float percentage = 0.7;
+	float ratio = 0.7;
 	int minSize = 5;
 	bool bDisplay = true;
 	float srate = 1.0f; //subsample rate
+	int sleepTime = 30;
 	if (nrhs >= 2)
 	{
 		mxClassID classMode;
-		ReadScalar(low, prhs[1], classMode);
+		ReadScalar(threshold, prhs[1], classMode);
 	}
 	if (nrhs >= 3)
 	{
 		mxClassID classMode;
-		ReadScalar(high, prhs[2], classMode);
+		ReadScalar(minSize, prhs[2], classMode);
 	}
 	if (nrhs >= 4)
 	{
 		mxClassID classMode;
-		ReadScalar(minSize, prhs[3], classMode);
+		ReadScalar(percentage, prhs[3], classMode);
 	}
 	if (nrhs >= 5)
 	{
 		mxClassID classMode;
-		ReadScalar(srate, prhs[4], classMode);
+		ReadScalar(ratio, prhs[4], classMode);
 	}
 	if (nrhs >= 6)
 	{
 		mxClassID classMode;
-		ReadScalar(sleepTime, prhs[5], classMode);
+		ReadScalar(srate, prhs[5], classMode);
+	}
+	if (nrhs >= 7)
+	{
+		mxClassID classMode;
+		ReadScalar(sleepTime, prhs[6], classMode);
 	}
 
 	double dWidth = cap.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
@@ -248,11 +254,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	cv::Size destSize(dWidth/srate, dHeight/srate);
 	cv::Mat smoothFrame; // = cv::Mat::zeros(destSize, cv::DataType<uchar>::type); //previous frame
 
-	TK::MovingEdgeDetector detector(0.5, 0.7, 0.4, 5);
+	TK::MovingEdgeDetector detector(threshold, percentage, ratio, minSize);
 
 	int frameCount = 0;
 	vector<cv::Mat> frames;
-	vector<cv::Mat> labels;
+	vector<cv::Mat> motions;
 	vector<cv::Mat> edges;
 	vector<vector<int>> points;
 	while (true)
@@ -292,6 +298,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		vector<unsigned char> _dif = detector.retrieveMovingEdges();
 		cv::Mat dif = StdVector2Mat(_dif, ndim, dims);
 
+		frames.push_back(gray);
+		edges.push_back(edge);
+		motions.push_back(dif);
+
 		if (bDisplay)
 		{
 			imshow("input", gray); //show the frame in "MyVideo" window
@@ -320,16 +330,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 2)
 	{
-		const int dims[] = { (int)destSize.width, (int)destSize.height, labels.size() };
-		vector<int> F(dims[0] * dims[1] * dims[2], 0);
+		const int dims[] = { (int)destSize.width, (int)destSize.height, motions.size() };
+		vector<unsigned char> F(dims[0] * dims[1] * dims[2], 0);
 		for (int i = 0; i < dims[2]; ++i)
 		{
 			for (int j = 0; j < dims[1]; ++j)
 			{
-				int* ptr = labels[i].ptr<int>(j);
+				unsigned char* ptr = motions[i].ptr<unsigned char>(j);
 				for (int k = 0; k < dims[0]; ++k)
 				{
-					SetData3(F, k, j, i, dims[0], dims[1], dims[2], ptr[k]);
+					SetData3(F, k, j, i, dims[0], dims[1], dims[2], (unsigned char)ptr[k]);
 				}
 			}
 		}
@@ -337,13 +347,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 3)
 	{
-		const int dims[] = { (int)destSize.width, (int)destSize.height, frames.size() };
+		const int dims[] = { (int)destSize.width, (int)destSize.height, edges.size() };
 		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
 		for (int i = 0; i < dims[2]; ++i)
 		{
 			for (int j = 0; j < dims[1]; ++j)
 			{
-				unsigned char* ptr = frames[i].ptr(j);
+				unsigned char* ptr = edges[i].ptr(j);
 				for (int k = 0; k < dims[0]; ++k)
 				{
 					SetData3(F, k, j, i, dims[0], dims[1], dims[2], ptr[k]);
@@ -354,13 +364,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 4)
 	{
-		const int dims[] = { (int)destSize.width, (int)destSize.height, edges.size() };
+		const int dims[] = { (int)destSize.width, (int)destSize.height, frames.size() };
 		vector<unsigned char> F(dims[0] * dims[1] * dims[2], (unsigned char)0);
 		for (int i = 0; i < dims[2]; ++i)
 		{
 			for (int j = 0; j < dims[1]; ++j)
 			{
-				unsigned char* ptr = edges[i].ptr(j);
+				unsigned char* ptr = frames[i].ptr(j);
 				for (int k = 0; k < dims[0]; ++k)
 				{
 					SetData3(F, k, j, i, dims[0], dims[1], dims[2], ptr[k]);

@@ -213,6 +213,7 @@ namespace TK
 			float dirX, float dirY, float low,
 			int ndim, const int* dims)
 	{
+
 		vector<CParticle*> tr;
 		while (p != NULL)
 		{
@@ -221,20 +222,23 @@ namespace TK
 			SetData2(sm, p->m_X, p->m_Y, dims[0], dims[1], true);
 			tr.push_back(p);
 			CParticle* q = NULL;
-			float dotmax = 0;
-			for (int i = -1; i <= 1; ++i)
+			float dotmax = 0; //allows 90-degree turn
+			for (int dist = 1; dist <= Canny::SearchDistance && q==NULL; ++dist)
 			{
-				for (int j = -1; j <= 1; ++j)
+				for (int i = -dist; i <= dist; ++i)
 				{
-					if (i == 0 && j == 0) continue;
-					CParticle* r = GetData2(mp, p->m_X + j, p->m_Y + i, dims[0], dims[1], (CParticle*)NULL);
-					if (r != NULL)
+					for (int j = -dist; j <= dist; ++j)
 					{
-						float dotval = j*dirX + i*dirY;
-						if (dotval > dotmax)
+						if (Abs(i) <= dist-1 && Abs(j) <= dist-1) continue;
+						CParticle* r = GetData2(mp, p->m_X + j, p->m_Y + i, dims[0], dims[1], (CParticle*)NULL);
+						if (r != NULL && r->m_Life >= low)
 						{
-							dotmax = dotval;
-							q = r;
+							float dotval = j*dirX + i*dirY;
+							if (dotval > dotmax)
+							{
+								dotmax = dotval;
+								q = r;
+							}
 						}
 					}
 				}
@@ -317,7 +321,80 @@ namespace TK
 			}
 		}
 	}
-	
+
+	/*
+	separable convolution in semi-optimized way.
+	*/
+	void
+	_separableConvolution2D(float out[], float im[], float g[],
+			int n, int ndim, const int* dims)
+	{
+		float* out1 = new float[dims[0] * dims[1]];
+		for (int i = 0; i < dims[1]; ++i)
+		{
+			for (int j = 0; j < dims[0]; ++j)
+			{
+				float s = 0;
+				for (int k = 0, k2 = j - n / 2; k < n; ++k, ++k2)
+				{
+					int j2 = j + k - n / 2;
+					j2 = j2 < 0 ? 0 : (j2 >= dims[0] ? dims[0] - 1 : j2);
+					int idx = i*dims[0] + j2;
+					s += im[idx] * g[k];
+				}
+				out1[i*dims[0] + j] = s;
+			}
+		}
+		for (int i = 0; i < dims[0]; ++i)
+		{
+			for (int j = 0; j < dims[1]; ++j)
+			{
+				float s = 0;
+				for (int k = 0; k < n; ++k)
+				{
+					int j2 = j + k - n / 2;
+					j2 = j2 < 0 ? 0 : (j2 >= dims[1] ? dims[1] - 1 : j2);
+					int idx = j2*dims[0] + i;
+					s += out1[idx] * g[k];
+				}
+				out[j*dims[0] + i] = s;
+			}
+		}
+		delete out1;
+	}
+
+	/*
+	Gaussian smooth the image.
+	*/
+	void
+	_smoothenImage(vector<float>& out, vector<float>& im,
+			int ndim, const int* dims)
+	{
+		float g[] = { 0.0001,0.0018,0.0132,0.0591,0.1607,0.2650,0.2650,0.1607,0.0591,0.0132,0.0018,0.0001 };
+		_separableConvolution2D((float*)(&out[0]),
+			(float*)(&im[0]),
+			g, sizeof(g)/sizeof(g[0]), ndim, dims);
+	}
+	void
+	_derivativeImage(vector<float>& dx, vector<float>& dy, vector<float>& sm,
+			int ndim, const int* dims)
+	{
+		//float dg[] = { 0.0001,0.0009,0.0065,0.0287,0.0738,0.1029,0.0521,-0.0521,-0.1029,-0.0738,-0.0287,-0.0065,-0.0009,-0.0001 };
+		for (int i = 0; i < dims[1]; ++i)
+		{
+			for (int j = 0; j < dims[0]; ++j)
+			{
+				int idx = i*dims[0] + j;
+				int idx2 = j == 0 ? idx : idx - 1;
+				int idx3 = j == dims[0] - 1 ? dims[0] - 1 : idx;
+				int idx4 = i == 0 ? idx : idx - dims[0];
+				int idx5 = i == dims[1] - 1 ? idx : idx + dims[0];
+				dx[idx] = (sm[idx2] + sm[idx3]) / 2.0f;
+				dy[idx] = (sm[idx4] + sm[idx5]) / 2.0f;
+			}
+		}
+	}
+
 	void
 	Canny::run(vector<float>& im, int ndim, const int* dims)
 	{
@@ -333,25 +410,37 @@ namespace TK
 		this->dims[0] = dims[0];
 		this->dims[1] = dims[1];
 
+		vector<float> sm(numberOfElements(ndim, dims), 0.0f);
 		vector<float> gr(numberOfElements(ndim, dims), 0.0f);
 		vector<float> dx(numberOfElements(ndim, dims), 0.0f);
 		vector<float> dy(numberOfElements(ndim, dims), 0.0f);
+		_smoothenImage(sm, im, ndim, dims);
+		/*_derivativeImage(dx, dy, sm, ndim, dims);
+		for (int i = 0; i < dims[1] * dims[0]; ++i)
+		{
+			gr[i] = sqrt(dx[i] * dy[i]);
+		}*/
 		for (int i = 1; i < dims[1] - 1; ++i)
 		{
 			for (int j = 1; j < dims[0] - 1; ++j)
 			{
-				float val = GetData2(im, j, i, dims[0], dims[1], 0.0f);
-				float nval = GetData2(im, j, i - 1, dims[0], dims[1], val);
-				float sval = GetData2(im, j, i + 1, dims[0], dims[1], val);
-				float wval = GetData2(im, j - 1, i, dims[0], dims[1], val);
-				float eval = GetData2(im, j + 1, i, dims[0], dims[1], val);
-				float dfx = (eval - wval) / 2;
-				float dfy = (sval - nval) / 2;
+				float val = GetData2(sm, j, i, dims[0], dims[1], 0.0f);
+				float nw = GetData2(sm, j - 1, i - 1, dims[0], dims[1], val);
+				float nn = GetData2(sm, j, i - 1, dims[0], dims[1], val);
+				float ne = GetData2(sm, j + 1, i - 1, dims[0], dims[1], val);
+				float ww = GetData2(sm, j - 1, i, dims[0], dims[1], val);
+				float ee = GetData2(sm, j + 1, i, dims[0], dims[1], val);
+				float sw = GetData2(sm, j - 1, i + 1, dims[0], dims[1], val);
+				float ss = GetData2(sm, j, i + 1, dims[0], dims[1], val);
+				float se = GetData2(sm, j + 1, i + 1, dims[0], dims[1], val);
+				float dfx = ((ne*.25+ee*.5+se*.25) - (nw*.25 + ww*.5 + sw*.25)) / 2;
+				float dfy = ((sw*.25+ss*.5+se*.25) - (nw*.25 + nn*.5 + ne*.25)) / 2;
 				SetData2(dx, j, i, dims[0], dims[1], dfx);
 				SetData2(dy, j, i, dims[0], dims[1], dfy);
 				SetData2(gr, j, i, dims[0], dims[1], sqrt(dfx*dfx + dfy*dfy));
 			}
 		}
+
 		vector<float> emag = CannyNonMaximumSuppression(gr, dy, dx, ndim, dims);
 		emag = CannyThinning(emag, ndim, dims);
 		high = ThresholdSelection(gr, percent, ndim, dims);

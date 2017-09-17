@@ -11,6 +11,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Video2Mat", "Video2Images\V
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MovingDotGroupingGrowth", "MovingDotGroupingGrowth\MovingDotGroupingGrowth.vcxproj", "{6F0E79AD-1C1E-4ABE-9113-60DABDDED2DB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Testbed", "Testbed\Testbed.vcxproj", "{2DDCC553-9189-43D1-BFC3-681F74301F93}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShapeMeasure", "ShapeMeasure\ShapeMeasure.vcxproj", "{DF7F7498-A99E-4F7E-A82D-620B338642A0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -51,6 +55,22 @@ Global
 		{6F0E79AD-1C1E-4ABE-9113-60DABDDED2DB}.Release|Win32.Build.0 = Release|Win32
 		{6F0E79AD-1C1E-4ABE-9113-60DABDDED2DB}.Release|x64.ActiveCfg = Release|x64
 		{6F0E79AD-1C1E-4ABE-9113-60DABDDED2DB}.Release|x64.Build.0 = Release|x64
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Debug|Win32.Build.0 = Debug|Win32
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Debug|x64.ActiveCfg = Debug|x64
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Debug|x64.Build.0 = Debug|x64
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Release|Win32.ActiveCfg = Release|Win32
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Release|Win32.Build.0 = Release|Win32
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Release|x64.ActiveCfg = Release|x64
+		{2DDCC553-9189-43D1-BFC3-681F74301F93}.Release|x64.Build.0 = Release|x64
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Debug|Win32.Build.0 = Debug|Win32
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Debug|x64.ActiveCfg = Debug|x64
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Debug|x64.Build.0 = Debug|x64
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Release|Win32.ActiveCfg = Release|Win32
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Release|Win32.Build.0 = Release|Win32
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Release|x64.ActiveCfg = Release|x64
+		{DF7F7498-A99E-4F7E-A82D-620B338642A0}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

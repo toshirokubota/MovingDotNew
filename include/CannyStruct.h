@@ -7,6 +7,7 @@ namespace TK
 {
 	struct Canny
 	{
+		static const int SearchDistance = 1;
 		Canny(float pc=0.7f, float r=0.4f, int ml=5, int mg=2)
 		{
 			percent = pc;

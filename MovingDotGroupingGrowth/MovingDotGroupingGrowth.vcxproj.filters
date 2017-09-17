@@ -36,13 +36,10 @@
     <ClCompile Include="..\src\CoreParticleUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Covariance.cpp">
+    <ClCompile Include="..\src\szConvexHull2D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Hungarian.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MovingDotGroupingPartitionV2.cpp">
+    <ClCompile Include="MovingDotGroupingPartitionV3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

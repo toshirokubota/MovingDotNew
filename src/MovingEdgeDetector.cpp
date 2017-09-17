@@ -16,39 +16,43 @@ namespace TK
 		edges.clear();
 
 		this->ndim = ndim;
-		this->dims[0] = dims[0]; 
+		this->dims[0] = dims[0];
 		this->dims[1] = dims[1];
 
-		edgeDetector[next].run(im, ndim, dims);
+		Canny* prev = latestDetection;
+		edgeDetector[next]->run(im, ndim, dims);
+		latestDetection = edgeDetector[next];
 		valid[next] = true;
-		int prev = (next - 1 + NumDetectors) % NumDetectors;
-		if (valid[prev])
-		{
 
-			for (int i = 0; i < edgeDetector[next].edges.size(); ++i)
+		for (int i = 0; i < latestDetection->edges.size(); ++i)
+		{
+			int count = 0;
+			int numEdges = latestDetection->edges[i].size();
+			for (int j = 0; j < numEdges; ++j)
 			{
-				int count = 0;
-				for (int j = 0; j < edgeDetector[next].edges[i].size(); ++j)
+				CParticle* p = latestDetection->edges[i][j];
+				for (int n = 0; n < NumDetectors; ++n)
 				{
-					CParticle* p = edgeDetector[next].edges[i][j];
-					if (GetData2(edgeDetector[prev].mp, p->m_X, p->m_Y, dims[0], dims[1], (CParticle*)NULL) == NULL)
+					if (latestDetection == edgeDetector[n]) continue;
+					if (!valid[n]) continue;
+
+					if (GetData2(edgeDetector[n]->mp, p->m_X, p->m_Y, dims[0], dims[1], (CParticle*)NULL) == NULL)
 					{
 						count++;
 					}
 				}
-				if ((float)count / edgeDetector[next].edges[i].size() > threshold)
-				{
-					vector<CParticle*> tr;
-					for (int j = 0; j < edgeDetector[next].edges[i].size(); ++j)
-					{
-						CParticle* p = edgeDetector[next].edges[i][j];
-						CParticle* q = new CParticle(*p);
-						tr.push_back(q);
-					}
-					edges.push_back(tr);
-				}
 			}
-
+			if ((float)count / (float)(numEdges * (NumDetectors - 1)) > threshold)
+			{
+				vector<CParticle*> tr;
+				for (int j = 0; j < edgeDetector[next]->edges[i].size(); ++j)
+				{
+					CParticle* p = edgeDetector[next]->edges[i][j];
+					CParticle* q = new CParticle(*p);
+					tr.push_back(q);
+				}
+				edges.push_back(tr);
+			}
 		}
 		next = (next + 1) % NumDetectors;
 	}
@@ -73,7 +77,7 @@ namespace TK
 		int index = (next - 1 + NumDetectors) % NumDetectors;
 		if (valid[index])
 		{
-			ed = edgeDetector[index].retrieve();
+			ed = edgeDetector[index]->retrieve();
 		}
 		return ed;
 	}
@@ -98,7 +102,7 @@ namespace TK
 		int index = (next - 1 + NumDetectors) % NumDetectors;
 		if (valid[index])
 		{
-			vector<float> em = edgeDetector[index].retrieve();
+			vector<float> em = edgeDetector[index]->retrieve();
 			for (int i = 0; i < em.size(); ++i)
 			{
 				if (em[i] > 0) ed[i] = 255;
