@@ -16,3 +16,14 @@ Then partition will breaks into multiple regions based on convexity-type cireter
 MovingDotGroupPartitionV2.cpp
 It applies region-filling. For every iteration, it checks for core particles and derive the region converged into the core.
 If the region is large enough, then records it.
+
+MovingDotGroupingPartitionV3.cpp
+It sequence the front and use the sequence to calculate the perimeter length of the shape more accurately.
+
+MovingDotGroupingPartitionV3SequencerWorking.cpp
+I concentrated on the sequencing, which is tricky. I thought it was working, thus the name. However, I had to deal with 
+some edge cases and image boundary, leading to the next version...
+
+MovingDotGroupingPartitionSequencerV2.cpp
+Continue working on the sequencer. This time, I deal with the image boundary. I decide to make significant changes.
+

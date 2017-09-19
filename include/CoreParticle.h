@@ -21,7 +21,7 @@ struct CoreParticle
 		//selected = false;
 		core = -1; //this will be set either 0, 1, or 2.
 		vertex = NULL;
-		saliency = std::numeric_limits<float>::quiet_NaN();
+		//saliency = std::numeric_limits<float>::quiet_NaN();
 	}
 	int x;
 	int y;
@@ -32,7 +32,7 @@ struct CoreParticle
 	int id;
 	float value; //generic value
 	float dval; //distance value
-	float saliency; //new addition 08/09/2017
+	//float saliency; //new addition 08/09/2017
 	int core;
 
 	set<CoreParticle*> sources;

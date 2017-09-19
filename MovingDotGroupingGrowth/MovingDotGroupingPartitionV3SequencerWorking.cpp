@@ -64,6 +64,8 @@ struct RegionInfo
 			measure = area / perimeter;
 		}
 		gen = g;
+		error = 0;
+		bKeep = false;
 	}
 
 	set<CoreParticle*> pnts;
@@ -73,6 +75,8 @@ struct RegionInfo
 	float perimeter;
 	float measure;
 	int gen;
+	int error; //0 - no error, 1 - indefinite loop, 2 - reaching null, +10 - missing points
+	bool bKeep;
 };
 
 bool
@@ -80,7 +84,6 @@ region_info_less(RegionInfo* a, RegionInfo* b)
 {
 	return a->measure < b->measure;
 }
-
 
 /*float
 shapeMeasure(set<CoreParticle*>& particles)
@@ -161,55 +164,42 @@ less_than (CoreParticle* p, CoreParticle* q)
 }
 
 /*
-Among U, find one that is closest to a particle in V.
-No consideration of tie breaker.
+Among U, find those that are closest to particles in V.
 */
-CoreParticle*
+set<CoreParticle*>
 closestParticle(set<CoreParticle*> U, set<CoreParticle*>& V)
 {
-	CoreParticle* z = NULL;
+	set<CoreParticle*> Z;
 	float mind = std::numeric_limits<float>::infinity();
-	int ncand = 0;
 	for (set<CoreParticle*>::iterator it = U.begin(); it != U.end(); ++it)
 	{
 		CoreParticle* p = *it;
-		vector<CoreParticle*> cand;
-		float mind0 = std::numeric_limits<float>::infinity();
 		for (set<CoreParticle*>::iterator jt = V.begin(); jt != V.end(); ++jt)
 		{
 			CoreParticle* q = *jt;
 			float d = length(p->x - q->x, p->y - q->y, p->z - q->z, 0.0f);
-			if (d < mind0)
+			if (d < mind)
 			{
-				cand.clear();
-				cand.push_back(q);
-				mind0 = d;
+				Z.clear();
+				Z.insert(p);
+				mind = d;
 			}
-			else if (d == mind0)
+			else if (d == mind)
 			{
-				cand.push_back(q);
+				Z.insert(p);
 			}
-		}
-		if (mind0 < mind)
-		{
-			mind = mind0;
-			ncand = cand.size();
-			z = p;
-		}
-		else if (mind0 == mind && ncand < cand.size())
-		{
-			ncand = cand.size();
-			z = p;
 		}
 	}
-	return z;
+	return Z;
 }
+
 
 /*
 for a complete set of boundary particles, sequence them.
 */
 vector<CoreParticle*> 
-sequence(vector<CoreParticle*>& bdry, vector<CoreParticle*>& mp,
+sequence(vector<CoreParticle*>& bdry, 
+	int& error_code,
 	int ndim, const int* dims)
 {
 	//find the most top-left point and use it as a starting point
@@ -237,55 +227,123 @@ sequence(vector<CoreParticle*>& bdry, vector<CoreParticle*>& mp,
 	vector<CoreParticle*> vp;
 	CoreParticle* p = tl;
 	CoreParticle* prev = NULL; //previously visited site
+	error_code = 0;
 	do
 	{
-		CoreParticle* q = NULL;
-		set<CoreParticle*> unvisited;
-		set<CoreParticle*> visited;
-		for (int i = 0; i < 4; ++i)
+		if (p->x == 162 && p->y == -1)
 		{
-			CoreParticle* r = GetData2(mp, p->x + xoff[i], p->y + yoff[i], dims[0], dims[1], (CoreParticle*)NULL);
+			p->value += 0;
+		}
+		CoreParticle* q = NULL;
+		set<CoreParticle*> candidates;
+		float minVal = std::numeric_limits<float>::infinity();
+		for (vector<CoreParticle*>::iterator it = p->neighbors.begin(); it != p->neighbors.end(); ++it)
+		{
+			CoreParticle* r = *it;
 			if (r)
 			{
 				if (r == prev) continue;
 
 				if (r->gen == p->gen)
 				{
-					if (r->value == 0)
+					if (r->value < minVal)
 					{
-						unvisited.insert(r);
+						minVal = r->value;
+						candidates.clear();
+						candidates.insert(r);
 					}
-					else
+					else if (r->value == minVal)
 					{
-						visited.insert(r);
+						candidates.insert(r);
 					}
 				}
 			}
 		}
-		if (unvisited.empty())
+		if (candidates.empty())
 		{
-			if (visited.empty())
-			{
-				q = prev;
-			}
-			else
-			{
-				q = closestParticle(visited, p->ascendents);
-			}
+			q = prev;
+		}
+		else if (candidates.size() == 1)
+		{
+			q = *(candidates.begin());
 		}
 		else
 		{
-			q = closestParticle(unvisited, p->ascendents);
+			CoreParticle* x = p;
+			CoreParticle* q0 = NULL;  //backup
+			int vpidx = vp.size() - 1;
+			do
+			{
+				set<CoreParticle*> filtered = closestParticle(candidates, x->ascendents);
+				if (filtered.size() == 1)
+				{
+					q = *(filtered.begin());
+					break;
+				}
+				else if (filtered.size() > 1)
+				{
+					if (vpidx >= 0)
+					{
+						x = vp[vpidx--];
+						q0 = *(filtered.begin());
+					}
+					else
+					{
+						if (!vp.empty())
+						{
+							printf("Cannot resolve tie-breaker at (%d,%d) gen=%d with boundary size=%d.\n",
+								p->x, p->y, gen, bdry.size());
+						}
+						q = *(filtered.begin());
+						break;
+					}
+				}
+				else //no choice...
+				{
+					q = q0;
+					break;
+				}
+			} while (true);
 		}
 		vp.push_back(p);
-		p->value = 1;
+		p->value += 1;
 		prev = p;
 		p = q;
 		if (p == NULL)
 		{
-			p->value += 0;
+			printf("Sequence: premature exit. NULL resulted from (%d, %d) gen=%d.\n",
+				prev->x, prev->y, gen);
+			error_code = 2;
+			break; //something is wrong
 		}
-	} while (p != NULL && p != tl && vp.size() < bdry.size()*2);
+		if (vp.size() >= bdry.size() * 2)
+		{
+			printf("Sequence: premature exit. Stuck in an end-less loop. %d original pnts, now %d contour pnts. Generation=%d.\n",
+				bdry.size(), vp.size(), gen);
+			error_code = 1;
+			break; //something is wrong
+		}
+		if(p == tl )
+		{
+			bool bDone = true;
+			for (vector<CoreParticle*>::iterator it = bdry.begin(); it != bdry.end(); ++it)
+			{
+				CoreParticle* a = *it;
+				if (a->value == 0)
+				{
+					bDone = false;
+					break;
+				}
+			}
+			if (bDone) break; //truely done!
+		}
+	} while (true);
+	if (vp.size() < bdry.size())
+	{
+		printf("Warning: a sequence with %d points from %d points. Some points missing...\n",
+			vp.size(), bdry.size());
+		error_code += 10;
+	}
 	for (int i = 0; i < bdry.size(); ++i)
 	{
 		bdry[i]->gen = gen; //restore the generation number
@@ -352,9 +410,12 @@ grow(vector<int>& S,
 		TK::Node<CoreParticle*>* n = TK::makeset(p);
 		SetVoxel(S, p, 1, ndim, dims);
 	}
-	vector<int> L0;
+	//vector<int> L0;
+	CoreParticleFactory& factory = CoreParticleFactory::getInstance();
+	vector<RegionInfo*> allRegions;
 	vector<RegionInfo*> regions;
 	vector<RegionInfo*> saved;
+	vector<RegionInfo*> errornous;
 	int nc0 = 0;
 	int iter = 1;
 	int gen = 2; //initial front gets 1.
@@ -365,51 +426,61 @@ grow(vector<int>& S,
 		vector<int> loc(ndim);
 		set<CoreParticle*> next;
 		vector<vector<CoreParticle*>> groups = clusterFront(front, true, ndim, dims);
+		vector<set<CoreParticle*>> expanded;
 		//for each cluster, get the neighbor shell - there may be overap with another cluster.
 		for (int m = 0; m < groups.size(); ++m)
 		{
+			int dims2[] = { dims[0] + 2, dims[1] + 2 };
+			vector<CoreParticle*> mp2(dims2[0]*dims2[1], NULL);
+			vector<CoreParticle*> vg = groups[m];
 			set<CoreParticle*> sp;
-			for (vector<CoreParticle*>::iterator it = groups[m].begin(); it != groups[m].end(); ++it)
+			for (vector<CoreParticle*>::iterator it = vg.begin(); it != vg.end(); ++it)
 			{
 				CoreParticle* p = *it;
-				vector<int> sub = coreParticle2Index(p, ndim);
 				for (int n = 0; n < nbh.size(); ++n)
 				{
-					if (NeighborCheck(sub.begin(), nbh[n].begin(), ndim, dims))
+					int x2 = p->x + nbh[n][0];
+					int y2 = p->y + nbh[n][1];
+					if (GetData2(S, x2, y2, dims[0], dims[1], 0) == 0)
 					{
-						int idx = Sub2Ind(sub, nbh[n], ndim, dims);
-						if (S[idx] == 0)
+						CoreParticle* q = GetData2(mp2, x2 + 1, y2 + 1, dims2[0], dims2[1], (CoreParticle*)NULL);
+						if (q == NULL)
 						{
-							CoreParticle* q = mp[idx];
-							if (q == NULL)
-							{
-								for (int k = 0; k < ndim; ++k)
-								{
-									loc[k] = sub[k] + nbh[n][k];
-								}
-								q = coreParticleNdim(loc, ndim);
-								SetVoxel(mp, q, q, ndim, dims);
-								next.insert(q);
-								q->src = p->src; ///TK!! we need to consider multipe sources.
-								particles.insert(q);
-							}
-							if (Abs(p->x - q->x) + Abs(p->y - q->y) + Abs(p->z - q->z) == 1)
-							{
-								p->neighbors.push_back(q);
-								q->neighbors.push_back(p);
-							}
-							if (Abs(p->x - q->x) <=1 && Abs(p->y - q->y) <=1 && Abs(p->z - q->z) <= 1)
-							{
-								p->neighbors8.push_back(q);
-								q->neighbors8.push_back(p);
-							}
-							sp.insert(q);
-							q->gen = gen; 
+							q = factory.makeParticle(x2, y2);
+							SetData2(mp2, q->x + 1, q->y + 1, dims2[0], dims2[1], q);
+							q->src = p->src; ///TK!! we need to consider multipe sources.
 						}
+						if (Abs(p->x - q->x) + Abs(p->y - q->y) + Abs(p->z - q->z) == 1)
+						{
+							p->neighbors.push_back(q);
+							q->neighbors.push_back(p);
+						}
+						if (Abs(p->x - q->x) <= 1 && Abs(p->y - q->y) <= 1 && Abs(p->z - q->z) <= 1)
+						{
+							p->neighbors8.push_back(q);
+							q->neighbors8.push_back(p);
+						}
+						sp.insert(q);
+						q->gen = gen;
 					}
 				}
 			}
-			for (vector<CoreParticle*>::iterator it = groups[m].begin(); it != groups[m].end(); ++it)
+			for (set<CoreParticle*>::iterator it = sp.begin(); it != sp.end(); ++it)
+			{
+				CoreParticle* p = *it;
+				set<CoreParticle*>::iterator jt = it;
+				jt++;
+				for (; jt != sp.end(); ++jt)
+				{
+					CoreParticle* q = *jt;
+					if (Abs(p->x - q->x) + Abs(p->y - q->y) + Abs(p->z - q->z) == 1)
+					{
+						p->neighbors.push_back(q);
+						q->neighbors.push_back(p);
+					}
+				}
+			}
+			for (vector<CoreParticle*>::iterator it = vg.begin(); it != vg.end(); ++it)
 			{
 				CoreParticle* p = *it;
 				vector<CoreParticle*> vq = closestDescendents(p, bEightNeighorhood);
@@ -423,15 +494,12 @@ grow(vector<int>& S,
 			for (set<CoreParticle*>::iterator it = sp.begin(); it != sp.end(); ++it)
 			{
 				CoreParticle* p = *it;
-				//if (p->ascendents.empty())
+				vector<CoreParticle*> vq = closestAscendents(p, bEightNeighorhood);
+				for (int j = 0; j < vq.size(); ++j)
 				{
-					vector<CoreParticle*> vq = closestAscendents(p, bEightNeighorhood);
-					for (int j = 0; j < vq.size(); ++j)
-					{
-						p->ascendents.insert(vq[j]);
-						vq[j]->descendents.insert(p);
-						p->sources.insert(vq[j]->sources.begin(), vq[j]->sources.end());
-					}
+					p->ascendents.insert(vq[j]);
+					vq[j]->descendents.insert(p);
+					p->sources.insert(vq[j]->sources.begin(), vq[j]->sources.end());
 				}
 			}
 			vector<vector<CoreParticle*>> bdries = clusterFront(sp, false, ndim, dims);
@@ -439,18 +507,20 @@ grow(vector<int>& S,
 			{
 				if (bdries[i].size() > 1) //can't trace with a single point.
 				{
-					vector<CoreParticle*> seq = sequence(bdries[i], mp, ndim, dims);
-					if (seq.size() < bdries[i].size())
-					{
-						printf("Warning: a sequence with %d points from %d points. Some points missing...\n",
-							seq.size(), bdries[i].size());
-					}
+					int error_code;
+					vector<CoreParticle*> seq = sequence(bdries[i], error_code, ndim, dims);
 					//RegionInfo* r = new RegionInfo(projectToSources(seq, ndim, dims), bdries[i], iter);
 					RegionInfo* r = new RegionInfo(seq, bdries[i], iter);
+					r->error = error_code;
 					regions.push_back(r);
-					//saved.push_back(r);
+					allRegions.push_back(r);
+					if (r->error)
+					{
+						errornous.push_back(r);
+					}
 				}
 			}
+			expanded.push_back(sp);
 		}
 		//saved.insert(saved.end(), regions.begin(), regions.end());
 		printf("iter %d: %d regions.\n", iter, regions.size());
@@ -458,17 +528,22 @@ grow(vector<int>& S,
 		for (int i = 0; i < regions0.size(); ++i)
 		{
 			RegionInfo* r0 = regions0[i];
+			if (r0->error) continue;
 			for (int j = 0; j < regions.size(); ++j)
 			{
 				RegionInfo* r = regions[j];
+				if (r->error) continue;
+
+				//no error. Check if merged. Then fitness.
 				set<CoreParticle*> diff1;
 				set_difference(r0->cores.begin(), r0->cores.end(), r->cores.begin(), r->cores.end(), std::inserter(diff1, diff1.begin()));
 				if (diff1.empty()) continue; 
 				set<CoreParticle*> diff2;
 				set_difference(r->cores.begin(), r->cores.end(), r0->cores.begin(), r0->cores.end(), std::inserter(diff2, diff2.begin()));
 				if (diff2.empty()) continue;
-				if (r0->measure > r->measure &&
-					(saved.size() < numKeep || saved[saved.size() - 1]->measure < r->measure))
+				//if (r0->measure > r->measure &&
+				//	(saved.size() < numKeep || saved[saved.size() - 1]->measure < r->measure))
+				if(r0->measure > r->measure)
 				{
 					int k = saved.size() - 1;
 					while (k>=0 && saved[k]->measure < r->measure)
@@ -481,10 +556,6 @@ grow(vector<int>& S,
 						saved.resize(numKeep);
 					}
 				}
-				else
-				{
-					delete regions0[i];
-				}
 				break;
 			}
 		}
@@ -493,20 +564,51 @@ grow(vector<int>& S,
 			CoreParticle* p = *it;
 			strongMedialParticle(p, ndim, dims);
 		}
+		for (int i = 0; i < expanded.size(); ++i)
+		{
+			for (set<CoreParticle*>::iterator it = expanded[i].begin(); it != expanded[i].end(); ++it)
+			{
+				CoreParticle* p = *it;
+				if (p->x < 0 || p->x >= dims[0] || p->y < 0 || p->y >= dims[1]) continue; //ignore outside the image
+				CoreParticle* q = GetData2(mp, p->x, p->y, dims[0], dims[1], (CoreParticle*)NULL);
+				if (q == NULL)
+				{
+					SetData2(mp, p->x, p->y, dims[0], dims[1], p);
+					next.insert(p);
+				}
+				else
+				{
+					q->ascendents.insert(p->ascendents.begin(), p->ascendents.end());
+					q->sources.insert(p->sources.begin(), p->sources.end());
+					//next.insert(q);
+				}
+			}
+		}
 		for (set<CoreParticle*>::iterator it = next.begin(); it != next.end(); ++it)
 		{
 			CoreParticle* p = *it;
-			SetVoxel(S, p, gen, ndim, dims);
+			SetData2(S, p->x, p->y, dims[0], dims[1], gen);
 		}
 		front = next;
 		iter++;
 		gen++;
 	}
 	//final clean up
-	for (int i = 0; i < regions.size(); ++i)
+	printf("There are %d best regions and %d errornous regions.\n", saved.size(), errornous.size());
+	saved.insert(saved.end(), errornous.begin(), errornous.end());
+
+	for (int i = 0; i < saved.size(); ++i)
 	{
-		delete regions[i];
+		saved[i]->bKeep = true;
 	}
+	for (int i = 0; i < allRegions.size(); ++i)
+	{
+		if (allRegions[i]->bKeep == false)
+		{
+			delete allRegions[i];
+		}
+	}
+
 	return saved;
 }
 
@@ -560,7 +662,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		const int dims[] = { regions.size(), 1 };
 		vector<vector<int>> F; // (dims[0] * dims[1]);
 		int ncol = 4;
-		for (int i = regions.size() - 1; i >= 0; --i)
+		for (int i = 0; i < regions.size(); ++i)
 		{
 			RegionInfo* r = regions[i];
 			const int dims2[] = { r->pnts.size(), ncol };
@@ -585,12 +687,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		//sort(regions.begin(), regions.end(), region_info_less);
 		const int dims[] = { regions.size(), 1 };
 		vector<vector<int>> F; // (dims[0] * dims[1]);
-		int ncol = 4;
-		for (int i = regions.size() - 1; i >= 0; --i)
+		int ncol = 5;
+		for (int i = 0; i < regions.size(); ++i)
 		{
 			RegionInfo* r = regions[i];
-			printf("Region: %d %d %f %f %f\n",
-				r->gen, r->contour.size(), r->measure, r->area, r->perimeter);
+			printf("%d Region: %d %d %d %f %f %f\n",
+				i, r->gen, r->pnts.size(), r->contour.size(), r->measure, r->area, r->perimeter);
 			const int dims2[] = { r->contour.size(), ncol };
 			vector<int> f(dims2[0] * dims2[1]);
 			for (int j = 0; j < r->contour.size(); ++j)
@@ -600,6 +702,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				SetData2(f, j, 1, dims2[0], dims2[1], p->y);
 				SetData2(f, j, 2, dims2[0], dims2[1], regions[i]->gen);
 				SetData2(f, j, 3, dims2[0], dims2[1], (int)(regions[i]->measure*1000.0));
+				SetData2(f, j, 4, dims2[0], dims2[1], p->id);
 			}
 			//delete regions[i];
 			F.push_back(f);

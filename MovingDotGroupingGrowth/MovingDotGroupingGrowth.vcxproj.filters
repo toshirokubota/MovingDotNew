@@ -39,7 +39,7 @@
     <ClCompile Include="..\src\szConvexHull2D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MovingDotGroupingPartitionV3.cpp">
+    <ClCompile Include="MovingDotGroupingPartitionSequencerV2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
